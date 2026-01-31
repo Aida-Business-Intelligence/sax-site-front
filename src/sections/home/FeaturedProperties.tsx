@@ -25,7 +25,7 @@ export default function FeaturedProperties({ properties }: Props) {
         }}
         className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
       >
-        {properties.map((p) => (
+        {properties.slice(0, 4).map((p) => (
           <motion.div
             key={p.id}
             variants={{

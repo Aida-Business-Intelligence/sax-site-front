@@ -3,9 +3,9 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import Globe from "@/components/map/Globe";
+import Map from "@/components/map/Map";
 import { getProperties } from "@/services/properties";
-import SearchBar from "@/components/forms/SearchBar";
+import HomeFilter from "@/sections/home/HomeFilter";
 
 export default function Hero() {
   const [markers, setMarkers] = useState<
@@ -36,9 +36,9 @@ export default function Hero() {
   }, []);
 
   return (
-    <section className="relative mx-auto max-w-7xl px-4 pt-16 sm:px-6 sm:pt-24 min-h-[calc(100vh-184px)] sm:min-h-[calc(100vh-180px)] lg:min-h-[calc(100vh-176px)] overflow-hidden">
+    <section className="relative mx-auto max-w-7xl px-4 pt-36 sm:px-6 sm:pt-48 min-h-[calc(100vh-184px)] sm:min-h-[calc(100vh-180px)] lg:min-h-[calc(100vh-176px)] overflow-visible">
       <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
-        <div className="space-y-6">
+        <div className="space-y-6 relative z-10">
           <motion.h1
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -76,17 +76,28 @@ export default function Hero() {
         <div className="hidden lg:block" aria-hidden="true" />
       </div>
 
-      {/* Globo flutuante no canto direito */}
-      <div className="pointer-events-none absolute right-0 hidden pr-4 md:block z-0 top-8 md:top-12 lg:top-16 xl:top-20">
-        <div className="pointer-events-auto relative h-[520px] w-[520px] overflow-hidden rounded-full shadow-lg xl:h-[620px] xl:w-[620px]">
-          <Globe markers={markers} className="h-full w-full" />
+      {/* Mapa interativo dentro do círculo (mesma config de /imoveis/mapa) */}
+      <div className="pointer-events-auto absolute right-0 hidden pr-4 md:block z-0 top-24 md:top-28 lg:top-32 xl:top-36">
+        <div className="pointer-events-auto relative h-[520px] w-[520px] overflow-hidden rounded-full border border-zinc-900/60">
+          <Map
+            center={{ lng: -56, lat: -15 }}
+            zoom={2.1}
+            minZoom={2.1}
+            pitch={0}
+            bearing={0}
+            styleUrl="mapbox://styles/mapbox/dark-v11"
+            projectionGlobe
+            markers={markers}
+            markerStyle="teal-glow"
+            className="h-full w-full"
+          />
         </div>
       </div>
 
-      {/* Busca fixa dentro do Hero, alinhada próximo à base */}
-      <div className="absolute inset-x-0 bottom-14 sm:bottom-12 md:bottom-16 flex justify-center px-4 sm:px-6">
-        <div className="w-full max-w-7xl">
-          <SearchBar />
+      {/* Filtro (mesmo de /imoveis) dentro do Hero, alinhado próximo à base */}
+      <div className="absolute inset-x-0 bottom-28 sm:bottom-24 md:bottom-28 flex justify-center px-4 sm:px-6 z-50">
+        <div className="w-full max-w-7xl relative z-50">
+          <HomeFilter />
         </div>
       </div>
     </section>

@@ -33,7 +33,9 @@ type FormFieldProps = {
 export function FormField({ name, render }: FormFieldProps) {
   const ctx = useContext(FormContext);
   const onChange = (v: any) => ctx.setValue?.(name, v);
-  return <>{render({ field: { value: undefined, onChange } })}</>;
+  const values = ctx.getValues?.() ?? {};
+  const value = (values as Record<string, unknown>)[name];
+  return <>{render({ field: { value, onChange } })}</>;
 }
 
 

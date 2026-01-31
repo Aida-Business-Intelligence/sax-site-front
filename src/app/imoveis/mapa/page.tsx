@@ -76,7 +76,7 @@ export default function MapaPage() {
     mapboxgl.accessToken = token;
     const map = new mapboxgl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/mapbox/light-v11",
+      style: "mapbox://styles/mapbox/dark-v11",
       center: [-56, -15], // South America center (globe view)
       zoom: 2.1,
       pitch: 0,

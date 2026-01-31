@@ -1,6 +1,6 @@
 import { buildMetadata } from "@/lib/seo";
 // import BlogListView from "@/sections/blog/BlogListView";
-import { PostListView } from "./../../sections/blog/view";
+import { PostListView } from "@/sections/blog/view";
 export const metadata = buildMetadata({
   title: "Blog",
   canonical: "/blog",

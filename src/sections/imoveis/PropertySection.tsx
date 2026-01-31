@@ -21,7 +21,7 @@ export default function PropertySection({ title, href, properties }: Props) {
         </Link>
       </div>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-        {properties.map((p) => (
+        {properties.slice(0, 4).map((p) => (
           <PropertyCard key={p.id} property={p} />
         ))}
       </div>

@@ -40,7 +40,7 @@ export default function MapTeaser({ properties = [] }: Props) {
             Navegar pelo mapa
           </Link>
         </div>
-        <div className="mt-6 h-[520px] w-full overflow-hidden rounded-2xl ring-1 ring-black/5 dark:ring-white/5">
+        <div className="mt-6 h-[420px] w-full overflow-hidden rounded-2xl ring-1 ring-black/5 dark:ring-white/5">
           <Map
             center={{ lng: -48.6357, lat: -26.9926 }} // Balneário Camboriú
             zoom={13.5}
@@ -50,7 +50,7 @@ export default function MapTeaser({ properties = [] }: Props) {
             show3DBuildings
             markers={[{ id: "bc", lng: -48.6357, lat: -26.9926 }]}
             markerStyle="teal-glow"
-            className="h-[520px] w-full rounded-2xl"
+            className="h-[420px] w-full rounded-2xl"
           />
         </div>
       </div>
