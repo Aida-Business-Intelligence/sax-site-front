@@ -25,6 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import PropertyDialog from "@/components/modals/PropertyDialog";
+import HomeFilter from "@/sections/home/HomeFilter";
 
 const schema = z.object({
   city: z.string().optional(),
@@ -69,18 +70,25 @@ export default function MapaPage() {
   );
 
   const token = getMapboxToken();
+  const INITIAL_CENTER: [number, number] = [-56, -15];
+  const INITIAL_ZOOM = 2.1;
+  const INITIAL_PITCH = 0;
+  const INITIAL_BEARING = 0;
 
   // Initialize map with globe projection (large globe view)
   useEffect(() => {
     if (!token || !mapContainer.current) return;
     mapboxgl.accessToken = token;
+    const isMobile =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(max-width: 767px)").matches;
     const map = new mapboxgl.Map({
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/dark-v11",
-      center: [-56, -15], // South America center (globe view)
-      zoom: 2.1,
-      pitch: 0,
-      bearing: 0,
+      center: INITIAL_CENTER, // South America center (globe view)
+      zoom: INITIAL_ZOOM,
+      pitch: INITIAL_PITCH,
+      bearing: INITIAL_BEARING,
     });
     mapRef.current = map;
     map.addControl(
@@ -88,18 +96,84 @@ export default function MapaPage() {
       "top-right"
     );
     map.on("style.load", () => {
-      const mapApi = map as unknown as {
-        setProjection?: (mode: string) => void;
-        setFog?: (cfg: Record<string, unknown>) => void;
-      };
-      mapApi.setProjection?.("globe");
-      mapApi.setFog?.({
-        color: "rgb(240,240,242)",
-        "high-color": "rgb(240,240,242)",
-        "space-color": "rgb(230,230,235)",
-        "horizon-blend": 0.02,
-        "star-intensity": 0,
-      });
+      if (isMobile) {
+        // Mobile: 3D buildings instead of globe
+        try {
+          const layers = map.getStyle().layers ?? [];
+          const labelLayerId = layers.find(
+            (l) => l.type === "symbol" && (l.layout as any)?.["text-field"]
+          )?.id;
+          map.addLayer(
+            {
+              id: "add-3d-buildings",
+              source: "composite",
+              "source-layer": "building",
+              filter: ["==", ["get", "extrude"], "true"],
+              type: "fill-extrusion",
+              minzoom: 15,
+              paint: {
+                "fill-extrusion-color": "#888",
+                "fill-extrusion-height": [
+                  "interpolate",
+                  ["linear"],
+                  ["zoom"],
+                  15,
+                  0,
+                  16,
+                  ["get", "height"],
+                ],
+                "fill-extrusion-base": [
+                  "interpolate",
+                  ["linear"],
+                  ["zoom"],
+                  15,
+                  0,
+                  16,
+                  ["get", "min_height"],
+                ],
+                "fill-extrusion-opacity": 0.6,
+              },
+            },
+            labelLayerId ?? undefined
+          );
+        } catch {}
+      } else {
+        // Desktop: globe projection + fog
+        const mapApi = map as unknown as {
+          setProjection?: (mode: string) => void;
+          setFog?: (cfg: Record<string, unknown>) => void;
+        };
+        mapApi.setProjection?.("globe");
+        mapApi.setFog?.({
+          color: "rgb(240,240,242)",
+          "high-color": "rgb(240,240,242)",
+          "space-color": "rgb(230,230,235)",
+          "horizon-blend": 0.02,
+          "star-intensity": 0,
+        });
+      }
+    });
+
+    // Mobile: center on user's location if permitted, with 3D angle
+    map.once("load", () => {
+      if (isMobile && typeof navigator !== "undefined" && "geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const { latitude, longitude } = pos.coords;
+            map.easeTo({
+              center: [longitude, latitude],
+              zoom: 14,
+              pitch: 60,
+              bearing: 24,
+              duration: 800,
+            });
+          },
+          () => {
+            // ignore errors; stay on default view
+          },
+          { enableHighAccuracy: true, timeout: 5000, maximumAge: 10000 }
+        );
+      }
     });
     return () => map.remove();
   }, [token]);
@@ -178,14 +252,39 @@ export default function MapaPage() {
     });
     // Only auto-zoom when usuário escolhe uma cidade (para preservar o "globo grande" na entrada)
     if (!bounds.isEmpty() && watchValues.city) {
-      map.fitBounds(bounds, { padding: 60, duration: 700, maxZoom: 14 });
+      const isMobile =
+        typeof window !== "undefined" &&
+        window.matchMedia?.("(max-width: 767px)").matches;
+      const padding = isMobile
+        ? { top: 120, bottom: 20, left: 20, right: 20 }
+        : { top: 60, bottom: 60, left: 60, right: 60 };
+      map.fitBounds(bounds, { padding, duration: 700, maxZoom: 14 });
+      // Remove persistent padding after a single frame to manter o globo centralizado ao dar zoom out
+      map.once("moveend", () => {
+        map.easeTo({ padding: 0, duration: 0 });
+      });
     }
   }, [filtered, watchValues.city]);
 
+  // Always return to the initial view when nenhuma cidade está selecionada
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (!watchValues.city) {
+      map.easeTo({
+        center: INITIAL_CENTER,
+        zoom: INITIAL_ZOOM,
+        pitch: INITIAL_PITCH,
+        bearing: INITIAL_BEARING,
+        duration: 400,
+      });
+    }
+  }, [watchValues.city]);
+
   return (
     <div className="relative min-h-screen">
-      {/* Sticky filter bar */}
-      <div className="sticky top-24 z-30 mx-auto max-w-7xl px-4 sm:px-6">
+      {/* Sticky filter bar (desktop/tablet only) */}
+      <div className="sticky top-24 z-30 mx-auto hidden max-w-7xl px-4 sm:px-6 md:block">
         <div className="rounded-full border border-zinc-200 bg-white/80 px-4 py-2 shadow-lg backdrop-blur-md ring-1 ring-black/5 dark:border-zinc-800 dark:bg-zinc-900/70">
           <Form {...form}>
             <form className="flex items-center gap-3 overflow-x-auto">
@@ -363,6 +462,11 @@ export default function MapaPage() {
 
       {/* Fullscreen map */}
       <div ref={mapContainer} className="mt-3 h-[calc(100vh-110px)] w-full" />
+
+      {/* Mobile: usa o mesmo drawer de filtros da Home; o botão da header dispara open-map-filters */}
+      <div className="md:hidden">
+        <HomeFilter mobileTriggerPosition="top" hideMobileTrigger />
+      </div>
 
       {/* Property preview dialog */}
       <PropertyDialog

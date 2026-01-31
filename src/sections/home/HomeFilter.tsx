@@ -50,9 +50,15 @@ type FormValues = z.input<typeof schema>;
 type HomeFilterProps = {
   // Controls where the mobile trigger button appears. Default is 'bottom' (floating)
   mobileTriggerPosition?: "top" | "bottom";
+  // On some pages (e.g., /imoveis/mapa) we open the drawer via header button,
+  // so we hide the trigger but keep the drawer logic mounted.
+  hideMobileTrigger?: boolean;
 };
 
-export default function HomeFilter({ mobileTriggerPosition = "bottom" }: HomeFilterProps) {
+export default function HomeFilter({
+  mobileTriggerPosition = "bottom",
+  hideMobileTrigger = false,
+}: HomeFilterProps) {
   const [properties, setProperties] = useState<Property[]>([]);
   useEffect(() => {
     getProperties().then(setProperties);
@@ -70,6 +76,21 @@ export default function HomeFilter({ mobileTriggerPosition = "bottom" }: HomeFil
     }
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+  // Allow other parts of the app (e.g., header button) to open/close this drawer
+  useEffect(() => {
+    const open = () => setMobileOpen(true);
+    const close = () => setMobileOpen(false);
+    const win = window as unknown as {
+      addEventListener: (type: string, listener: () => void) => void;
+      removeEventListener: (type: string, listener: () => void) => void;
+    };
+    win.addEventListener("open-map-filters", open);
+    win.addEventListener("close-map-filters", close);
+    return () => {
+      win.removeEventListener("open-map-filters", open);
+      win.removeEventListener("close-map-filters", close);
+    };
   }, []);
 
   const form = useForm<FormValues>({
@@ -575,27 +596,28 @@ export default function HomeFilter({ mobileTriggerPosition = "bottom" }: HomeFil
 
       {/* Mobile: botão único + drawer lateral */}
       <div className="md:hidden">
-        {mobileTriggerPosition === "bottom" ? (
-          <div className="fixed inset-x-0 bottom-36 z-[55] flex justify-center px-4">
-            <button
-              type="button"
-              onClick={() => setMobileOpen(true)}
-              className="w-full max-w-xs rounded-full bg-zinc-900 px-5 py-3 text-sm font-medium text-white shadow-md ring-1 ring-black/5 dark:bg-white dark:text-zinc-900"
-            >
-              Filtrar Imóveis
-            </button>
-          </div>
-        ) : (
-          <div className="px-4 mt-0 mb-4">
-            <button
-              type="button"
-              onClick={() => setMobileOpen(true)}
-              className="w-full rounded-full bg-zinc-900 px-5 py-3 text-sm font-medium text-white shadow-md ring-1 ring-black/5 dark:bg-white dark:text-zinc-900"
-            >
-              Filtrar Imóveis
-            </button>
-          </div>
-        )}
+        {!hideMobileTrigger &&
+          (mobileTriggerPosition === "bottom" ? (
+            <div className="fixed inset-x-0 bottom-36 z-[55] flex justify-center px-4">
+              <button
+                type="button"
+                onClick={() => setMobileOpen(true)}
+                className="w-full max-w-xs rounded-full bg-zinc-900 px-5 py-3 text-sm font-medium text-white shadow-md ring-1 ring-black/5 dark:bg-white dark:text-zinc-900"
+              >
+                Filtrar Imóveis
+              </button>
+            </div>
+          ) : (
+            <div className="px-4 mt-0 mb-4">
+              <button
+                type="button"
+                onClick={() => setMobileOpen(true)}
+                className="w-full rounded-full bg-zinc-900 px-5 py-3 text-sm font-medium text-white shadow-md ring-1 ring-black/5 dark:bg-white dark:text-zinc-900"
+              >
+                Filtrar Imóveis
+              </button>
+            </div>
+          ))}
 
         <AnimatePresence>
           {mobileOpen ? (

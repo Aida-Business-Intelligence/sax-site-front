@@ -108,43 +108,43 @@ export function Select({ value, onValueChange, disabled, children, className, me
 
       {open && menuRect
         ? createPortal(
-            <div
+        <div
               ref={menuRef}
-              role="listbox"
-              className={[
+          role="listbox"
+          className={[
                 "z-9999 max-h-60 overflow-auto rounded-lg border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900",
                 menuClassName ? menuClassName : "",
-              ].join(" ")}
+          ].join(" ")}
               style={{
                 position: "fixed",
                 left: `${menuRect.left}px`,
                 top: `${menuRect.top}px`,
                 width: menuClassName ? undefined : `${menuRect.width}px`,
               }}
-            >
-              {options.map((opt) => {
-                const active = opt.value === value;
-                return (
-                  <button
-                    type="button"
-                    key={opt.value}
-                    role="option"
-                    aria-selected={active}
-                    onClick={() => {
-                      onValueChange?.(opt.value);
-                      setOpen(false);
-                    }}
-                    className={[
-                      "flex w-full items-center rounded-md px-3 py-2 text-left text-sm transition",
-                      active
-                        ? "bg-zinc-100 font-medium dark:bg-zinc-800"
-                        : "hover:bg-zinc-100 dark:hover:bg-zinc-800",
-                    ].join(" ")}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
+        >
+          {options.map((opt) => {
+            const active = opt.value === value;
+            return (
+              <button
+                type="button"
+                key={opt.value}
+                role="option"
+                aria-selected={active}
+                onClick={() => {
+                  onValueChange?.(opt.value);
+                  setOpen(false);
+                }}
+                className={[
+                  "flex w-full items-center rounded-md px-3 py-2 text-left text-sm transition",
+                  active
+                    ? "bg-zinc-100 font-medium dark:bg-zinc-800"
+                    : "hover:bg-zinc-100 dark:hover:bg-zinc-800",
+                ].join(" ")}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
             </div>,
             document.body
           )

@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Filter } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 export default function Header() {
@@ -22,6 +22,25 @@ export default function Header() {
   return (
     <>
       <header className="md:fixed md:inset-x-0 md:top-0 z-50 pointer-events-none">
+        {/* Mobile: filtro no /imoveis/mapa (esquerda) */}
+        {usePathname()?.startsWith("/imoveis/mapa") ? (
+          <div className="fixed left-4 top-4 z-50 md:hidden pointer-events-auto">
+            <button
+              type="button"
+              aria-label="Abrir filtros do mapa"
+              onClick={() => {
+                try {
+                  window.dispatchEvent(new CustomEvent("open-map-filters"));
+                } catch {
+                  // no-op
+                }
+              }}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/80 shadow-md backdrop-blur ring-1 ring-black/5 transition hover:bg-white/90 active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-900/80 dark:hover:bg-zinc-900"
+            >
+              <Filter className="h-5 w-5" />
+            </button>
+          </div>
+        ) : null}
         <div className="mx-auto max-w-6xl px-4 py-5 flex items-center justify-center md:justify-start">
           <Link
             href="/"
