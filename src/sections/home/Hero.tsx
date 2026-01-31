@@ -36,9 +36,9 @@ export default function Hero() {
   }, []);
 
   return (
-    <section className="relative mx-auto max-w-7xl px-4 pt-36 sm:px-6 sm:pt-48 min-h-[calc(100vh-184px)] sm:min-h-[calc(100vh-180px)] lg:min-h-[calc(100vh-176px)] overflow-visible">
+    <section className="relative mx-auto max-w-7xl px-4 pt-24 sm:px-6 sm:pt-48 min-h-[calc(100vh-220px)] sm:min-h-[calc(100vh-180px)] lg:min-h-[calc(100vh-176px)] overflow-visible">
       <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
-        <div className="space-y-6 relative z-10">
+        <div className="space-y-6 relative z-10 hidden md:block">
           <motion.h1
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -76,9 +76,28 @@ export default function Hero() {
         <div className="hidden lg:block" aria-hidden="true" />
       </div>
 
+      {/* Mapa (mobile): globo centralizado */}
+      <div className="md:hidden mt-16 flex justify-center">
+        <div className="relative w-[92vw] max-w-[380px] aspect-square overflow-hidden rounded-full border border-zinc-900/60">
+          <Map
+            center={{ lng: -56, lat: -15 }}
+            zoom={2.1}
+            minZoom={2.1}
+            pitch={0}
+            bearing={0}
+            styleUrl="mapbox://styles/mapbox/dark-v11"
+            projectionGlobe
+            markers={markers}
+            markerStyle="teal-glow"
+            showControls={false}
+            className="h-full w-full"
+          />
+        </div>
+      </div>
+
       {/* Mapa interativo dentro do círculo (mesma config de /imoveis/mapa) */}
       <div className="pointer-events-auto absolute right-0 hidden pr-4 md:block z-0 top-24 md:top-28 lg:top-32 xl:top-36">
-        <div className="pointer-events-auto relative h-[520px] w-[520px] overflow-hidden rounded-full border border-zinc-900/60">
+        <div className="pointer-events-auto relative md:h-[420px] md:w-[420px] lg:h-[520px] lg:w-[520px] xl:h-[560px] xl:w-[560px] overflow-hidden rounded-full border border-zinc-900/60">
           <Map
             center={{ lng: -56, lat: -15 }}
             zoom={2.1}
@@ -94,11 +113,16 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* Filtro (mesmo de /imoveis) dentro do Hero, alinhado próximo à base */}
-      <div className="absolute inset-x-0 bottom-28 sm:bottom-24 md:bottom-28 flex justify-center px-4 sm:px-6 z-50">
+      {/* Filtro (desktop/tablet fixo próximo à base) */}
+      <div className="hidden md:flex absolute inset-x-0 bottom-40 sm:bottom-32 md:bottom-40 justify-center px-4 sm:px-6 z-50">
         <div className="w-full max-w-7xl relative z-50">
           <HomeFilter />
         </div>
+      </div>
+
+      {/* Filtro (mobile: no fluxo, abaixo do conteúdo) */}
+      <div className="md:hidden mt-0">
+        <HomeFilter />
       </div>
     </section>
   );

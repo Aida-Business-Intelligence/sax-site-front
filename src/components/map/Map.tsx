@@ -19,6 +19,7 @@ type Props = {
   projectionGlobe?: boolean;
   minZoom?: number;
   maxZoom?: number;
+  showControls?: boolean;
   className?: string;
 };
 
@@ -34,6 +35,7 @@ export default function Map({
   projectionGlobe = false,
   minZoom,
   maxZoom,
+  showControls = true,
   className,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -57,15 +59,24 @@ export default function Map({
       antialias: true,
       minZoom,
       maxZoom,
+      attributionControl: false,
     });
     // Ensure first render paints even if container sizes after mount
     map.once("load", () => {
       map.resize();
+      try {
+        const root = containerRef.current;
+        root?.querySelectorAll(".mapboxgl-ctrl-logo, .mapboxgl-ctrl-attrib")?.forEach((el) => {
+          (el as HTMLElement).style.display = "none";
+        });
+      } catch {}
     });
-    map.addControl(
-      new mapboxgl.NavigationControl({ showCompass: false }),
-      "top-right"
-    );
+    if (showControls) {
+      map.addControl(
+        new mapboxgl.NavigationControl({ showCompass: false }),
+        "top-right"
+      );
+    }
     map.on("style.load", () => {
       if (projectionGlobe) {
         const api = map as unknown as {

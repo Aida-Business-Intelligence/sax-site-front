@@ -4,10 +4,10 @@ export function PostListView() {
   const posts: { id: string; title: string; slug: string; excerpt: string }[] =
     [];
   return (
-    <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
-      <h1 className="mb-6 text-2xl font-semibold">Blog</h1>
+    <div className="max-w-4xl">
+      <h1 className="mb-4 text-3xl font-semibold tracking-tight">Blog</h1>
       {posts.length === 0 ? (
-        <p className="text-zinc-600 dark:text-zinc-300">
+        <p className="text-zinc-700 dark:text-zinc-300">
           Em breve publicaremos os primeiros posts.
         </p>
       ) : (
