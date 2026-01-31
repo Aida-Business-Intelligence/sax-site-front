@@ -439,7 +439,9 @@ export async function getProperties(): Promise<Property[]> {
 export async function getPropertyBySlug(
   slug: string
 ): Promise<Property | undefined> {
-  return properties.find((p) => p.slug === slug);
+  const norm = (s: string) => decodeURIComponent(String(s)).trim().toLowerCase();
+  const target = norm(slug);
+  return properties.find((p) => norm(p.slug) === target);
 }
 
 export async function getCities(): Promise<City[]> {

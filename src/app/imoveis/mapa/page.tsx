@@ -25,7 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import PropertyDialog from "@/components/modals/PropertyDialog";
-import HomeFilter from "@/sections/home/HomeFilter";
+import HomeFilter, { type FormValues as HomeFilterValues } from "@/sections/home/HomeFilter";
 
 const schema = z.object({
   city: z.string().optional(),
@@ -239,19 +239,34 @@ export default function MapaPage() {
     // Clear old markers
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
-    if (!filtered.length) return;
-    // Fit bounds to markers
-    const bounds = new mapboxgl.LngLatBounds();
-    filtered.forEach((p) => {
-      const marker = new mapboxgl.Marker({
-        element: createPriceMarkerEl(p, () => setSelected(p)),
-        anchor: "bottom",
-      }).setLngLat([p.address.lng as number, p.address.lat as number]);
-      markersRef.current.push(marker.addTo(map));
-      bounds.extend([p.address.lng as number, p.address.lat as number]);
-    });
-    // Only auto-zoom when usuário escolhe uma cidade (para preservar o "globo grande" na entrada)
-    if (!bounds.isEmpty() && watchValues.city) {
+
+    // Prefer markers do conjunto filtrado; se vazio mas houver cidade, usamos bounds da cidade
+    const addMarkersAndGetBounds = (items: Property[]) => {
+      const b = new mapboxgl.LngLatBounds();
+      items.forEach((p) => {
+        const marker = new mapboxgl.Marker({
+          element: createPriceMarkerEl(p, () => setSelected(p)),
+          anchor: "bottom",
+        }).setLngLat([p.address.lng as number, p.address.lat as number]);
+        markersRef.current.push(marker.addTo(map));
+        b.extend([p.address.lng as number, p.address.lat as number]);
+      });
+      return b;
+    };
+
+    let bounds: mapboxgl.LngLatBounds | null = null;
+    if (filtered.length) {
+      bounds = addMarkersAndGetBounds(filtered);
+    } else if (watchValues.city) {
+      // Conjunto base por cidade (ignora outros filtros) para garantir navegação ao trocar apenas a localização
+      const [cityName, state] = (watchValues.city ?? "").split("-");
+      const cityItems = (allProperties ?? []).filter(
+        (p) => p.address.city === cityName && p.address.state === state
+      );
+      bounds = cityItems.length ? addMarkersAndGetBounds(cityItems) : null;
+    }
+
+    if (bounds && !bounds.isEmpty() && watchValues.city) {
       const isMobile =
         typeof window !== "undefined" &&
         window.matchMedia?.("(max-width: 767px)").matches;
@@ -287,7 +302,7 @@ export default function MapaPage() {
       <div className="sticky top-24 z-30 mx-auto hidden max-w-7xl px-4 sm:px-6 md:block">
         <div className="rounded-full border border-zinc-200 bg-white/80 px-4 py-2 shadow-lg backdrop-blur-md ring-1 ring-black/5 dark:border-zinc-800 dark:bg-zinc-900/70">
           <Form {...form}>
-            <form className="flex items-center gap-3 overflow-x-auto">
+            <form className="flex flex-wrap items-center gap-3 overflow-visible">
               <FormField
                 control={form.control}
                 name="city"
@@ -465,7 +480,49 @@ export default function MapaPage() {
 
       {/* Mobile: usa o mesmo drawer de filtros da Home; o botão da header dispara open-map-filters */}
       <div className="md:hidden">
-        <HomeFilter mobileTriggerPosition="top" hideMobileTrigger />
+        <HomeFilter
+          mobileTriggerPosition="top"
+          hideMobileTrigger
+          onSearch={(values: HomeFilterValues) => {
+            // Sincroniza filtros com o formulário da página para atualizar marcadores
+            form.setValue("city", values.city ?? undefined);
+            form.setValue("mode", values.mode ?? "comprar");
+            form.setValue("type", values.type ?? undefined);
+            form.setValue("bedrooms", values.bedrooms ?? undefined);
+            form.setValue("builder", values.builder ?? undefined);
+            // Calcula bounds e centraliza o mapa
+            const map = mapRef.current;
+            if (!map) return;
+            const match = (allProperties ?? []).filter((p) => {
+              if (values.city) {
+                const c = `${p.address.city}-${p.address.state}`;
+                if (c !== values.city) return false;
+              }
+              if (values.type && p.type !== values.type) return false;
+              if (values.bedrooms) {
+                const min = Number(values.bedrooms);
+                if (!Number.isNaN(min) && p.bedrooms < min) return false;
+              }
+              if (values.builder && p.builder !== values.builder) return false;
+              return (
+                typeof p.address.lat === "number" &&
+                typeof p.address.lng === "number"
+              );
+            });
+            if (match.length) {
+              const bounds = new mapboxgl.LngLatBounds();
+              match.forEach((p) =>
+                bounds.extend([p.address.lng as number, p.address.lat as number])
+              );
+              map.fitBounds(bounds, { padding: 60, duration: 700, maxZoom: 14 });
+              map.once("moveend", () => map.easeTo({ padding: 0, duration: 0 }));
+            }
+            // Fecha o drawer (evento usado pelo HomeFilter)
+            try {
+              window.dispatchEvent(new CustomEvent("close-map-filters"));
+            } catch {}
+          }}
+        />
       </div>
 
       {/* Property preview dialog */}

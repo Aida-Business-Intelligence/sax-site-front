@@ -45,7 +45,7 @@ const schema = z.object({
   tag: z.array(z.string()).optional(),
   builder: z.string().optional(),
 });
-type FormValues = z.input<typeof schema>;
+export type FormValues = z.input<typeof schema>;
 
 type HomeFilterProps = {
   // Controls where the mobile trigger button appears. Default is 'bottom' (floating)
@@ -53,11 +53,14 @@ type HomeFilterProps = {
   // On some pages (e.g., /imoveis/mapa) we open the drawer via header button,
   // so we hide the trigger but keep the drawer logic mounted.
   hideMobileTrigger?: boolean;
+  // Optional override to handle the search action externally (e.g., /imoveis/mapa)
+  onSearch?: (values: FormValues) => void;
 };
 
 export default function HomeFilter({
   mobileTriggerPosition = "bottom",
   hideMobileTrigger = false,
+  onSearch: onSearchOverride,
 }: HomeFilterProps) {
   const [properties, setProperties] = useState<Property[]>([]);
   useEffect(() => {
@@ -180,6 +183,9 @@ export default function HomeFilter({
 
   function onSearch() {
     const values = form.getValues();
+    if (onSearchOverride) {
+      onSearchOverride(values);
+    } else {
     const params = new URLSearchParams();
     if (values.city) params.set("city", values.city);
     if (values.mode) params.set("mode", values.mode);
@@ -201,6 +207,7 @@ export default function HomeFilter({
       params.set("tag", values.tag.join(","));
     if (values.builder) params.set("builder", values.builder);
     router.push(`/imoveis?${params.toString()}`);
+    }
   }
 
   return (
@@ -598,15 +605,15 @@ export default function HomeFilter({
       <div className="md:hidden">
         {!hideMobileTrigger &&
           (mobileTriggerPosition === "bottom" ? (
-            <div className="fixed inset-x-0 bottom-36 z-[55] flex justify-center px-4">
-              <button
-                type="button"
-                onClick={() => setMobileOpen(true)}
-                className="w-full max-w-xs rounded-full bg-zinc-900 px-5 py-3 text-sm font-medium text-white shadow-md ring-1 ring-black/5 dark:bg-white dark:text-zinc-900"
-              >
-                Filtrar Imóveis
-              </button>
-            </div>
+        <div className="fixed inset-x-0 bottom-36 z-[55] flex justify-center px-4">
+          <button
+            type="button"
+            onClick={() => setMobileOpen(true)}
+            className="w-full max-w-xs rounded-full bg-zinc-900 px-5 py-3 text-sm font-medium text-white shadow-md ring-1 ring-black/5 dark:bg-white dark:text-zinc-900"
+          >
+            Filtrar Imóveis
+          </button>
+        </div>
           ) : (
             <div className="px-4 mt-0 mb-4">
               <button
