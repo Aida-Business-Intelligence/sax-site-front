@@ -21,7 +21,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 pointer-events-none">
+      <header className="md:fixed md:inset-x-0 md:top-0 z-50 pointer-events-none">
         <div className="mx-auto max-w-6xl px-4 py-5 flex items-center justify-center md:justify-start">
           <Link
             href="/"
@@ -89,7 +89,7 @@ function MobileMenu({
   const [open, setOpen] = useState(false);
   return (
     <>
-      <div className="fixed right-4 top-4 z-50 md:hidden pointer-events-auto">
+      <div className="absolute right-4 top-4 z-50 md:hidden pointer-events-auto">
         <button
           type="button"
           aria-label="Abrir menu"

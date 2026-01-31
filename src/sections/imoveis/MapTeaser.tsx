@@ -34,7 +34,7 @@ export default function MapTeaser({ properties = [] }: Props) {
           </div>
           <Link
             href="/imoveis/mapa"
-            className="inline-flex items-center gap-2 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+            className="inline-flex items-center gap-2 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 self-center md:self-auto"
           >
             <MapPinned className="size-4" />
             Navegar pelo mapa

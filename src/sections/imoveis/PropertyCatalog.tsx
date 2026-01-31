@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import HomeFilter from "@/sections/home/HomeFilter";
 import PropertySection from "./PropertySection";
 import FeaturedBanner from "./FeaturedBanner";
 import MapTeaser from "./MapTeaser";
@@ -102,8 +103,8 @@ function PropertyCatalog({ properties }: { properties: Property[] }) {
 
   return (
     <>
-      {/* Filtro (campos soltos, sem card e sem scroll horizontal) */}
-      <div className="sticky top-32 z-40 mb-20 mt-8 relative">
+      {/* Filtro desktop/tablet */}
+      <div className="sticky top-32 z-40 mb-20 mt-8 relative hidden md:block">
         <Form {...form}>
           <form className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 relative z-40">
             {/* Localização */}
@@ -356,11 +357,17 @@ function PropertyCatalog({ properties }: { properties: Property[] }) {
             />
           </form>
         </Form>
-        {/* Top fade to connect up to header (full viewport width) */}
-        <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-40 z-30 h-60 w-screen bg-linear-to-t from-white/98 via-white/95 to-transparent dark:from-zinc-900 dark:via-zinc-900/85" />
-        {/* Bottom fade to hide content under the sticky filter (full viewport width) */}
-        <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 -bottom-1 z-30 h-32 w-screen bg-linear-to-b from-white/98 via-white/85 to-transparent dark:from-zinc-900 dark:via-zinc-900/85" />
+        {/* Top/Bottom fades (desktop only) */}
+        <div className="hidden md:block pointer-events-none absolute left-1/2 -translate-x-1/2 -top-40 z-30 h-60 w-screen bg-linear-to-t from-white/98 via-white/95 to-transparent dark:from-zinc-900 dark:via-zinc-900/85" />
+        <div className="hidden md:block pointer-events-none absolute left-1/2 -translate-x-1/2 -bottom-1 z-30 h-32 w-screen bg-linear-to-b from-white/98 via-white/85 to-transparent dark:from-zinc-900 dark:via-zinc-900/85" />
       </div>
+
+      {/* Mobile: usa o mesmo HomeFilter com botão no topo */}
+      <div className="md:hidden">
+        <HomeFilter mobileTriggerPosition="top" />
+      </div>
+
+      {/* Drawer anterior do mobile removido em favor do HomeFilter compartilhado */}
 
       {/* Seções com base no filtro */}
       <PropertySection
@@ -389,7 +396,12 @@ function PropertyCatalog({ properties }: { properties: Property[] }) {
         href="/imoveis?secao=frente-mar"
         properties={filtered}
       />
-      <div className="relative">
+      {/* Mapa + parceiros: mobile mostra sequencial; desktop mantém sticky */}
+      <div className="md:hidden">
+        <MapTeaser properties={filtered} />
+        <PartnersSection />
+      </div>
+      <div className="relative hidden md:block">
         <div className="sticky top-66 z-10">
           <MapTeaser properties={filtered} />
         </div>

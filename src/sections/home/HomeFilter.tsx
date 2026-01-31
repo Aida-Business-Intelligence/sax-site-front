@@ -47,7 +47,12 @@ const schema = z.object({
 });
 type FormValues = z.input<typeof schema>;
 
-export default function HomeFilter() {
+type HomeFilterProps = {
+  // Controls where the mobile trigger button appears. Default is 'bottom' (floating)
+  mobileTriggerPosition?: "top" | "bottom";
+};
+
+export default function HomeFilter({ mobileTriggerPosition = "bottom" }: HomeFilterProps) {
   const [properties, setProperties] = useState<Property[]>([]);
   useEffect(() => {
     getProperties().then(setProperties);
@@ -568,17 +573,29 @@ export default function HomeFilter() {
         </Form>
       </div>
 
-      {/* Mobile: botão único fixo + drawer lateral */}
+      {/* Mobile: botão único + drawer lateral */}
       <div className="md:hidden">
-        <div className="fixed inset-x-0 bottom-36 z-[55] flex justify-center px-4">
-          <button
-            type="button"
-            onClick={() => setMobileOpen(true)}
-            className="w-full max-w-xs rounded-full bg-zinc-900 px-5 py-3 text-sm font-medium text-white shadow-md ring-1 ring-black/5 dark:bg-white dark:text-zinc-900"
-          >
-            Filtrar Imóveis
-          </button>
-        </div>
+        {mobileTriggerPosition === "bottom" ? (
+          <div className="fixed inset-x-0 bottom-36 z-[55] flex justify-center px-4">
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              className="w-full max-w-xs rounded-full bg-zinc-900 px-5 py-3 text-sm font-medium text-white shadow-md ring-1 ring-black/5 dark:bg-white dark:text-zinc-900"
+            >
+              Filtrar Imóveis
+            </button>
+          </div>
+        ) : (
+          <div className="px-4 mt-0 mb-4">
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              className="w-full rounded-full bg-zinc-900 px-5 py-3 text-sm font-medium text-white shadow-md ring-1 ring-black/5 dark:bg-white dark:text-zinc-900"
+            >
+              Filtrar Imóveis
+            </button>
+          </div>
+        )}
 
         <AnimatePresence>
           {mobileOpen ? (

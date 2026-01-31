@@ -122,10 +122,10 @@ export default function RootLayout({
         <MuiThemeProvider>
           <Header />
           {/* Top mask to fade content under fixed header/menu */}
-          {/* Solid cap under the fixed header to fully hide content */}
-          <div className="pointer-events-none fixed inset-x-0 top-0 z-40 h-12 bg-white dark:bg-zinc-900" />
-          {/* Stronger fade below the cap so content disappears before reaching header/menu */}
-          <div className="pointer-events-none fixed inset-x-0 top-12 z-40 h-24 bg-linear-to-b from-white/98 via-white/80 to-transparent dark:from-zinc-900 dark:via-zinc-900/85" />
+          {/* Solid cap under the fixed header (desktop/tablet only) */}
+          <div className="pointer-events-none fixed inset-x-0 top-0 z-40 hidden h-12 bg-white dark:bg-zinc-900 md:block" />
+          {/* Stronger fade below the cap (desktop/tablet only) */}
+          <div className="pointer-events-none fixed inset-x-0 top-12 z-40 hidden h-24 bg-linear-to-b from-white/98 via-white/80 to-transparent dark:from-zinc-900 dark:via-zinc-900/85 md:block" />
           <main className="flex-1 pb-24">{children}</main>
           <Footer />
         </MuiThemeProvider>

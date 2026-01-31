@@ -22,7 +22,7 @@ export default async function ImoveisPage() {
         style={{ backgroundImage: "url('/assets/images/home/bc1.png')" }}
       />
 
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 pt-8 pb-10 sm:px-6 md:pt-10">
         <PropertyCatalog properties={properties} />
       </div>
     </div>

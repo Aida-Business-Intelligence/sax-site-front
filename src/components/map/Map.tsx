@@ -63,7 +63,11 @@ export default function Map({
     });
     // Ensure first render paints even if container sizes after mount
     map.once("load", () => {
+      // Force a couple of resizes to cover cases where the container
+      // changes size shortly after mount (route transitions, animations)
       map.resize();
+      requestAnimationFrame(() => map.resize());
+      setTimeout(() => map.resize(), 120);
       try {
         const root = containerRef.current;
         root?.querySelectorAll(".mapboxgl-ctrl-logo, .mapboxgl-ctrl-attrib")?.forEach((el) => {
@@ -148,18 +152,32 @@ export default function Map({
     const onWinResize = () => map.resize();
     window.addEventListener("resize", onWinResize);
     window.addEventListener("orientationchange", onWinResize);
+    // Resize when the map becomes visible again (e.g., after route change)
+    const onVisibility = () => map.resize();
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       ro?.disconnect();
       window.removeEventListener("resize", onWinResize);
       window.removeEventListener("orientationchange", onWinResize);
-      map.remove();
+      document.removeEventListener("visibilitychange", onVisibility);
+      // Properly dispose and reset refs so remounts initialize correctly
+      try {
+        map.remove();
+      } finally {
+        mapRef.current = null;
+        markerObjs.current.forEach((m) => m.remove());
+        markerObjs.current = [];
+        setMapReady(false);
+      }
     };
   }, [token, styleUrl, center.lng, center.lat, zoom, pitch, bearing, show3DBuildings, projectionGlobe, minZoom, maxZoom]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
+    // Final safety resize after layers/markers adjustments
+    map.resize();
     // Clear old markers
     markerObjs.current.forEach((m) => m.remove());
     markerObjs.current = [];
