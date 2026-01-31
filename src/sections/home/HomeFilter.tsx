@@ -642,7 +642,7 @@ export default function HomeFilter() {
                           <FormControl>
                             <div className="flex h-11 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
                               <MapPin
-                                className="h-4 w-4 text-black/15 shrink-0"
+                                className="h-4 w-4 text-white/70 shrink-0"
                                 strokeWidth={2.25}
                               />
                               <Select
@@ -690,7 +690,7 @@ export default function HomeFilter() {
                           <FormControl>
                             <div className="flex h-11 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
                               <Home
-                                className="text-black/15 shrink-0"
+                                className="text-white/70 shrink-0"
                                 strokeWidth={2.25}
                                 size={18}
                               />
@@ -734,7 +734,7 @@ export default function HomeFilter() {
                           </span>
                           <FormControl>
                             <div className="flex h-11 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
-                              <ArrowLeftRight className="h-4 w-4 text-black/15" />
+                              <ArrowLeftRight className="h-4 w-4 text-white/70" />
                               <Select
                                 value={field.value ?? "comprar"}
                                 onValueChange={field.onChange}
@@ -770,7 +770,7 @@ export default function HomeFilter() {
                           </span>
                           <FormControl>
                             <div className="flex h-11 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
-                              <Home className="h-4 w-4 text-black/15" />
+                              <Home className="h-4 w-4 text-white/70" />
                               <Select
                                 value={field.value ?? undefined}
                                 onValueChange={(val) =>
@@ -817,7 +817,7 @@ export default function HomeFilter() {
                           </span>
                           <FormControl>
                             <div className="flex h-11 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
-                              <Bed className="h-4 w-4 text-black/15" />
+                              <Bed className="h-4 w-4 text-white/70" />
                               <Select
                                 value={field.value ?? undefined}
                                 onValueChange={(val) =>
@@ -1041,7 +1041,7 @@ export default function HomeFilter() {
                           </span>
                           <FormControl>
                             <div className="flex h-11 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
-                              <Tag className="h-4 w-4 text-black/30" />
+                              <Tag className="h-4 w-4 text-white/70" />
                               <Select
                                 value={field.value ?? "__all__"}
                                 onValueChange={field.onChange}
@@ -1184,7 +1184,7 @@ export default function HomeFilter() {
                   </form>
                 </Form>
                 </div>
-                <div className="sticky bottom-0 border-t border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+                <div className="sticky bottom-0 border-t border-white/20 bg-white/15 p-3 text-white backdrop-blur-sm">
                 <button
                   type="button"
                   onClick={() => {
