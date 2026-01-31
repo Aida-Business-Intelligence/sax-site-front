@@ -636,11 +636,11 @@ export default function HomeFilter() {
                       name="city"
                       render={({ field }) => (
                         <FormItem>
-                          <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                          <span className="block px-1 text-[10px] font-medium text-white">
                             Localização
                           </span>
                           <FormControl>
-                            <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                            <div className="flex h-11 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
                               <MapPin
                                 className="h-4 w-4 text-black/15 shrink-0"
                                 strokeWidth={2.25}
@@ -652,8 +652,11 @@ export default function HomeFilter() {
                                     val === "__all__" ? undefined : val
                                   )
                                 }
-                                className="w-full text-black/80 border-0 bg-transparent px-0"
-                                menuClassName="w-[340px]"
+                                className="w-full text-white border-0 bg-transparent px-0"
+                                placeholderClassName="text-white/70"
+                                valueClassName="text-white"
+                                caretClassName="text-white/60"
+                                menuClassName="z-[95] w-[340px] bg-white"
                               >
                                 <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Localização" />
@@ -681,11 +684,11 @@ export default function HomeFilter() {
                       name="builder"
                       render={({ field }) => (
                         <FormItem>
-                          <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                          <span className="block px-1 text-[10px] font-medium text-white">
                             Construtora
                           </span>
                           <FormControl>
-                            <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                            <div className="flex h-11 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
                               <Home
                                 className="text-black/15 shrink-0"
                                 strokeWidth={2.25}
@@ -695,7 +698,11 @@ export default function HomeFilter() {
                                 value={field.value ?? undefined}
                                 onValueChange={field.onChange}
                                 disabled={builderOptions.length === 0}
-                                className="w-full text-black/80 border-0 bg-transparent px-0"
+                                className="w-full text-white border-0 bg-transparent px-0"
+                                placeholderClassName="text-white/70"
+                                valueClassName="text-white"
+                                caretClassName="text-white/60"
+                                menuClassName="z-[95] w-full bg-white"
                               >
                                 <SelectTrigger
                                   className="w-full"
@@ -722,16 +729,20 @@ export default function HomeFilter() {
                       name="mode"
                       render={({ field }) => (
                         <FormItem>
-                          <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                          <span className="block px-1 text-[10px] font-medium text-white">
                             Tipo de Transação
                           </span>
                           <FormControl>
-                            <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                            <div className="flex h-11 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
                               <ArrowLeftRight className="h-4 w-4 text-black/15" />
                               <Select
                                 value={field.value ?? "comprar"}
                                 onValueChange={field.onChange}
-                                className="w-full text-black/80 border-0 bg-transparent px-0"
+                                className="w-full text-white border-0 bg-transparent px-0"
+                                placeholderClassName="text-white/70"
+                                valueClassName="text-white"
+                                caretClassName="text-white/60"
+                                menuClassName="z-[95] w-full bg-white"
                               >
                                 <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Transação" />
@@ -754,11 +765,11 @@ export default function HomeFilter() {
                       name="type"
                       render={({ field }) => (
                         <FormItem>
-                          <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                          <span className="block px-1 text-[10px] font-medium text-white">
                             Tipo
                           </span>
                           <FormControl>
-                            <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                            <div className="flex h-11 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
                               <Home className="h-4 w-4 text-black/15" />
                               <Select
                                 value={field.value ?? undefined}
@@ -767,8 +778,11 @@ export default function HomeFilter() {
                                     val === "__all__" ? undefined : val
                                   )
                                 }
-                                className="w-full text-black/80 border-0 bg-transparent px-0"
-                                menuClassName="w-[184px]"
+                                className="w-full text-white border-0 bg-transparent px-0"
+                                placeholderClassName="text-white/70"
+                                valueClassName="text-white"
+                                caretClassName="text-white/60"
+                                menuClassName="z-[95] w-[184px] bg-white"
                               >
                                 <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Tipo" />
@@ -798,11 +812,11 @@ export default function HomeFilter() {
                       name="bedrooms"
                       render={({ field }) => (
                         <FormItem>
-                          <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                          <span className="block px-1 text-[10px] font-medium text-white">
                             Quartos
                           </span>
                           <FormControl>
-                            <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                            <div className="flex h-11 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
                               <Bed className="h-4 w-4 text-black/15" />
                               <Select
                                 value={field.value ?? undefined}
@@ -811,7 +825,11 @@ export default function HomeFilter() {
                                     val === "__all__" ? undefined : val
                                   )
                                 }
-                                className="w-full text-black/80 border-0 bg-transparent px-0"
+                                className="w-full text-white border-0 bg-transparent px-0"
+                                placeholderClassName="text-white/70"
+                                valueClassName="text-white"
+                                caretClassName="text-white/60"
+                                menuClassName="z-[95] w-full bg-white"
                               >
                                 <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Quartos" />
@@ -832,10 +850,10 @@ export default function HomeFilter() {
                     />
                     {/* Preço (slider duplo) */}
                     <div>
-                      <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                      <span className="block px-1 text-[10px] font-medium text-white">
                         Preço
                       </span>
-                      <div className="rounded-lg border border-zinc-200 bg-white px-3 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+                      <div className="rounded-lg border border-white/30 bg-white/15 px-3 py-3 text-white backdrop-blur-sm">
                         {(() => {
                           const min = 0;
                           const max = 3000000;
@@ -916,10 +934,10 @@ export default function HomeFilter() {
                                 />
                               </div>
                               <div className="mt-2 flex justify-between text-[12px]">
-                                <span className="text-zinc-500">
+                                <span className="text-white/80">
                                   {formatBRL(vMin)}
                                 </span>
-                                <span className="font-semibold text-zinc-800 dark:text-zinc-100">
+                                <span className="font-semibold text-white">
                                   {formatBRL(vMax)}
                                 </span>
                               </div>
@@ -931,10 +949,10 @@ export default function HomeFilter() {
 
                     {/* Tamanho do imóvel (slider duplo) */}
                     <div>
-                      <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                      <span className="block px-1 text-[10px] font-medium text-white">
                         Tamanho do imóvel
                       </span>
-                      <div className="rounded-lg border border-zinc-200 bg-white px-3 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+                      <div className="rounded-lg border border-white/30 bg-white/15 px-3 py-3 text-white backdrop-blur-sm">
                         {(() => {
                           const min = 30;
                           const max = 500;
@@ -946,9 +964,11 @@ export default function HomeFilter() {
                             100 - ((vMax - min) / (max - min)) * 100;
                           return (
                             <div>
-                              <div className="mb-2 flex justify-between text-[12px] text-zinc-600 dark:text-zinc-300">
+                              <div className="mb-2 flex justify-between text-[12px] text-white/90">
                                 <span>{vMin} m²</span>
-                                <span className="font-medium">{vMax} m²</span>
+                                <span className="font-medium text-white">
+                                  {vMax} m²
+                                </span>
                               </div>
                               <div className="relative h-10">
                                 <div className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-zinc-300 dark:bg-zinc-700" />
@@ -1016,16 +1036,19 @@ export default function HomeFilter() {
                       name="status"
                       render={({ field }) => (
                         <FormItem>
-                          <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                          <span className="block px-1 text-[10px] font-medium text-white">
                             Status
                           </span>
                           <FormControl>
-                            <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                            <div className="flex h-11 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
                               <Tag className="h-4 w-4 text-black/30" />
                               <Select
                                 value={field.value ?? "__all__"}
                                 onValueChange={field.onChange}
-                                className="w-full text-black/80 border-0 bg-transparent px-0"
+                                className="w-full text-white border-0 bg-transparent px-0"
+                                placeholderClassName="text-white/70"
+                                caretClassName="text-white/60"
+                                menuClassName="z-[95] w-full bg-white"
                               >
                                 <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Selecione" />
@@ -1063,7 +1086,7 @@ export default function HomeFilter() {
                         const selected = field.value ?? [];
                         return (
                           <FormItem>
-                            <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                            <span className="block px-1 text-[10px] font-medium text-white">
                               Tags
                             </span>
                             <FormControl>
@@ -1071,15 +1094,15 @@ export default function HomeFilter() {
                                 <button
                                   type="button"
                                   onClick={() => setTagsOpen((v) => !v)}
-                                  className="flex h-11 w-full items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-left dark:border-zinc-800 dark:bg-zinc-900"
+                                  className="flex h-11 w-full items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 text-left text-white backdrop-blur-sm"
                                 >
-                                  <Tag className="h-4 w-4 text-black/15" />
+                                  <Tag className="h-4 w-4 text-white/70" />
                                   <span
                                     className={[
                                       "block w-full truncate",
                                       selected.length === 0
-                                        ? "text-black/40"
-                                        : "text-black/80",
+                                        ? "text-white/60"
+                                        : "text-white",
                                     ].join(" ")}
                                   >
                                     {selected.length === 0
@@ -1095,7 +1118,7 @@ export default function HomeFilter() {
                                     width="16"
                                     height="16"
                                     viewBox="0 0 24 24"
-                                    className="ml-2 text-black/40"
+                                    className="ml-2 text-white/60"
                                   >
                                     <path
                                       fill="currentColor"
@@ -1105,7 +1128,7 @@ export default function HomeFilter() {
                                 </button>
 
                                 {tagsOpen ? (
-                                  <div className="absolute z-50 mt-2 max-h-60 w-[260px] overflow-auto rounded-lg border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+                                  <div className="absolute z-[95] mt-2 max-h-60 w-[260px] overflow-auto rounded-lg border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
                                     {tagOptions.map((name) => {
                                       const active = selected.includes(name);
                                       return (
