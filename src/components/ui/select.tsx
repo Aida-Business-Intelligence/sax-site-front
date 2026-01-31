@@ -7,9 +7,10 @@ type SelectProps = {
   children?: React.ReactNode;
   className?: string;
   menuClassName?: string;
+  placeholderClassName?: string;
 };
 
-export function Select({ value, onValueChange, disabled, children, className, menuClassName }: SelectProps) {
+export function Select({ value, onValueChange, disabled, children, className, menuClassName, placeholderClassName }: SelectProps) {
   // Extract options and placeholder from children structure
   const { options, placeholder } = useMemo(() => {
     const opts: { value: string; label: React.ReactNode }[] = [];
@@ -60,7 +61,7 @@ export function Select({ value, onValueChange, disabled, children, className, me
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span className={["block w-full truncate", !selected ? "text-black/40" : ""].join(" ")}>
+        <span className={["block w-full truncate", !selected ? (placeholderClassName ?? "text-black/40") : ""].join(" ")}>
           {selected ? selected.label : placeholder ?? "Selecionar"}
         </span>
         <svg

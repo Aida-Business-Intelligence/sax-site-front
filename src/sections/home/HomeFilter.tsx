@@ -595,15 +595,15 @@ export default function HomeFilter() {
                 exit={{ opacity: 0 }}
                 onClick={() => setMobileOpen(false)}
               />
-              <motion.div
-                className="absolute right-0 top-0 h-full w-80 max-w-[90%] rounded-l-2xl bg-white shadow-xl dark:bg-zinc-900"
+            <motion.div
+              className="absolute right-0 top-0 h-full w-80 max-w-[90%] rounded-l-2xl border border-white/30 bg-white/20 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-zinc-800/25"
                 initial={{ x: 320 }}
                 animate={{ x: 0 }}
                 exit={{ x: 320 }}
                 transition={{ type: "spring", stiffness: 320, damping: 28 }}
               >
-                <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 bg-white px-4 py-3 rounded-tl-2xl dark:border-zinc-800 dark:bg-zinc-900">
-                <span className="text-sm font-medium">Filtros</span>
+              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/20 px-4 py-3 rounded-tl-2xl text-white">
+                <span className="text-sm font-semibold tracking-wide">Filtros</span>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -614,14 +614,14 @@ export default function HomeFilter() {
                         status: "__all__",
                       })
                     }
-                    className="rounded-md px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                    className="rounded-md px-2 py-1 text-xs text-white/80 hover:bg-white/20"
                   >
                     Limpar
                   </button>
                   <button
                     type="button"
                     onClick={() => setMobileOpen(false)}
-                    className="rounded-md px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                    className="rounded-md px-2 py-1 text-xs text-white/80 hover:bg-white/20"
                   >
                     Fechar
                   </button>

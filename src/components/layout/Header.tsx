@@ -119,25 +119,25 @@ function MobileMenu({
               onClick={() => setOpen(false)}
             />
             <motion.div
-              className="absolute right-0 top-0 h-full w-72 max-w-[85%] bg-white shadow-xl dark:bg-zinc-900"
+              className="absolute right-0 top-0 h-full w-80 max-w-[88%] flex flex-col rounded-l-2xl border border-white/30 bg-white/20 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-zinc-800/25"
               initial={{ x: 320 }}
               animate={{ x: 0 }}
               exit={{ x: 320 }}
               transition={{ type: "spring", stiffness: 320, damping: 28 }}
             >
-              <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
-                <span className="text-sm font-medium">Menu</span>
+              <div className="flex items-center justify-between px-4 py-3 border-b border-white/20 text-zinc-900 dark:text-zinc-100">
+                <span className="text-sm font-semibold tracking-wide">Menu</span>
                 <button
                   type="button"
                   aria-label="Fechar menu"
                   onClick={() => setOpen(false)}
-                  className="rounded-md p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  className="rounded-md p-2 hover:bg-white/20 active:scale-[0.98]"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
               <nav className="px-2 py-2">
-                <ul className="space-y-1">
+                <ul className="space-y-0.5">
                   {items.map((item) => (
                     <li key={item.href}>
                       {item.href.startsWith("http") ? (
@@ -147,8 +147,10 @@ function MobileMenu({
                           rel="noopener noreferrer"
                           onClick={() => setOpen(false)}
                           className={[
-                            "block rounded-md px-3 py-2 text-sm",
-                            isActive(item.href) ? "font-semibold text-teal-600" : "text-zinc-700 dark:text-zinc-300",
+                            "block rounded-lg px-3 py-2 text-sm transition",
+                            isActive(item.href)
+                              ? "font-semibold text-white bg-white/30"
+                              : "text-white hover:bg-white/20",
                           ].join(" ")}
                         >
                           {item.label}
@@ -158,8 +160,10 @@ function MobileMenu({
                           href={item.href}
                           onClick={() => setOpen(false)}
                           className={[
-                            "block rounded-md px-3 py-2 text-sm",
-                            isActive(item.href) ? "font-semibold text-teal-600" : "text-zinc-700 dark:text-zinc-300",
+                            "block rounded-lg px-3 py-2 text-sm transition",
+                            isActive(item.href)
+                              ? "font-semibold text-white bg-white/30"
+                              : "text-white hover:bg-white/20",
                           ].join(" ")}
                         >
                           {item.label}
@@ -169,6 +173,24 @@ function MobileMenu({
                   ))}
                 </ul>
               </nav>
+              <div className="mt-auto border-t border-white/20 px-4 py-3 text-xs text-white">
+                <div className="flex items-center justify-between">
+                  <span className="rounded-full bg-white/40 px-2 py-0.5 text-[10px] font-medium text-zinc-700 backdrop-blur-sm dark:bg-white/10 dark:text-zinc-200">
+                    V 1.2
+                  </span>
+                  <span className="whitespace-nowrap">
+                    Desenvolvido por{" "}
+                    <a
+                      href="https://www.aidabi.com.br/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-black dark:text-black hover:underline"
+                    >
+                      Aida
+                    </a>
+                  </span>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         ) : null}
