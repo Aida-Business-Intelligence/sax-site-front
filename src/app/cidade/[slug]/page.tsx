@@ -1,15 +1,11 @@
 import { buildMetadata } from "@/lib/seo";
-import { getCitySlugs } from "@/services/properties";
+export const dynamic = "force-dynamic";
 
 type Props = {
   params: { slug: string };
 };
 
 export const revalidate = 86400;
-
-export async function generateStaticParams() {
-  return getCitySlugs().map((slug) => ({ slug }));
-}
 
 export async function generateMetadata({ params }: Props) {
   const name = params.slug.split("-")[0]?.toUpperCase() ?? "Cidade";

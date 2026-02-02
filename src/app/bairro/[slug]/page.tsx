@@ -1,15 +1,12 @@
 import { buildMetadata } from "@/lib/seo";
-import { getNeighborhoodSlugs } from "@/services/properties";
+// Rendering: avoid pre-rendering errors during static export on Vercel
+export const dynamic = "force-dynamic";
 
 type Props = {
   params: { slug: string };
 };
 
 export const revalidate = 86400; // ISR diário
-
-export async function generateStaticParams() {
-  return getNeighborhoodSlugs().map((slug) => ({ slug }));
-}
 
 export async function generateMetadata({ params }: Props) {
   const name = params.slug.split("-")[0]?.toUpperCase() ?? "Bairro";

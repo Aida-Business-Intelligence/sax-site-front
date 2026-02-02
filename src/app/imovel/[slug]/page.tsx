@@ -1,18 +1,17 @@
 import { buildMetadata } from "@/lib/seo";
-import { getPropertyBySlug, getPropertySlugs } from "@/services/properties";
+import { getPropertyBySlug } from "@/services/properties";
 import Image from "next/image";
 import Map from "@/components/map/Map";
 import { trackImovelView } from "@/lib/tracking";
 
 export const revalidate = 1800;
+export const dynamic = "force-dynamic";
 
 type Props = {
   params: { slug: string };
 };
 
-export async function generateStaticParams() {
-  return getPropertySlugs().map((slug) => ({ slug }));
-}
+// Do not pre-generate all property pages to avoid export issues while mocking
 
 export async function generateMetadata({ params }: Props) {
   const property = await getPropertyBySlug(params.slug);
