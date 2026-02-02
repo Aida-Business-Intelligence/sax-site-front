@@ -36,7 +36,7 @@ export default function Hero() {
   }, []);
 
   return (
-    <section className="relative mx-auto max-w-7xl px-4 pt-24 sm:px-6 sm:pt-48 min-h-[calc(100vh-220px)] sm:min-h-[calc(100vh-180px)] lg:min-h-[calc(100vh-176px)] overflow-visible">
+    <section className="relative mx-auto max-w-7xl px-4 pt-12 sm:px-6 sm:pt-48 min-h-[calc(100vh-220px)] sm:min-h-[calc(100vh-180px)] lg:min-h-[calc(100vh-176px)] overflow-visible">
       <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
         <div className="space-y-6 relative z-10 hidden md:block">
           <motion.h1
@@ -77,7 +77,7 @@ export default function Hero() {
       </div>
 
       {/* Mapa (mobile): globo centralizado */}
-      <div className="md:hidden mt-16 flex justify-center">
+      <div className="md:hidden -mt-2 flex justify-center">
         <div className="relative w-[92vw] max-w-[380px] aspect-square overflow-hidden rounded-full border border-zinc-900/60">
           <Map
             center={{ lng: -56, lat: -15 }}
