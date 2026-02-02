@@ -253,7 +253,8 @@ export default function Map({
     const pause = () => {
       pauseUntil.current = performance.now() + 4000;
     };
-    const events: (keyof mapboxgl.MapboxEventHandler)[] = [
+    // Avoid relying on mapbox-gl types on Vercel (can differ by version)
+    const events: string[] = [
       "dragstart",
       "mousedown",
       "touchstart",
