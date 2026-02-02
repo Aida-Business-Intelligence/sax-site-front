@@ -62,14 +62,8 @@ export function PostListView() {
 
   return (
     <div className="w-full max-w-5xl">
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-6">
         <h1 className="text-3xl font-semibold tracking-tight">Blog</h1>
-        <Link
-          href="/blog/new"
-          className="inline-flex items-center justify-center rounded-md bg-black px-3 py-2 text-sm font-medium text-white hover:opacity-90 dark:bg-white dark:text-black"
-        >
-          Novo post
-        </Link>
       </div>
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -309,12 +303,6 @@ function ReactionBar({ slug, likes }: { slug: string; likes: number }) {
         <span>🔗</span>
         <span>Compartilhar</span>
       </button>
-      <Link
-        href={`/blog/${slug}/edit`}
-        className="ml-auto inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900"
-      >
-        ✏️ Editar
-      </Link>
     </div>
   );
 }
