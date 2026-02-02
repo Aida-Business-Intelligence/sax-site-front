@@ -18,7 +18,7 @@ export default function SobrePage() {
         style={{ backgroundImage: "url('/assets/images/home/bc1.png')" }}
       />
 
-      <div className="mx-auto max-w-7xl px-4 pt-32 pb-10 sm:px-6 sm:pt-36">
+      <div className="mx-auto max-w-7xl px-4 pt-14 pb-10 sm:px-6 sm:pt-36">
         <AboutView />
       </div>
     </div>
