@@ -59,37 +59,46 @@ export default function Header() {
       </header>
 
       {/* Floating menu (desktop/tablet) */}
-      <div className="fixed inset-x-0 top-4 z-50 hidden md:flex justify-center pointer-events-none">
-        <nav className="pointer-events-auto rounded-full border border-zinc-200 bg-white/95 px-2 sm:px-3 py-1 shadow-md backdrop-blur-md ring-1 ring-black/5 dark:border-zinc-800 dark:bg-zinc-900/90 max-w-[95vw] overflow-x-auto">
-          <ul className="flex items-center gap-0.5 sm:gap-1">
-            {items.map((item) => (
-              <li key={item.href}>
-                {item.href.startsWith("http") ? (
-                  <a
-                    href={item.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block rounded-full px-2.5 sm:px-3 py-1 text-sm transition text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                  >
-                    {item.label}
-                  </a>
-                ) : (
-                  <Link
-                    href={item.href}
-                    className={[
-                      "block rounded-full px-2.5 sm:px-3 py-1 text-sm transition",
-                      isActive(item.href)
-                        ? "font-semibold text-teal-500"
-                        : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800",
-                    ].join(" ")}
-                  >
-                    {item.label}
-                  </Link>
-                )}
-              </li>
-            ))}
-          </ul>
-        </nav>
+      <div className="fixed inset-x-0 top-4 z-50 hidden md:flex pointer-events-none">
+        <div className="relative mx-auto w-full max-w-6xl flex items-center justify-center px-4">
+          <nav className="pointer-events-auto rounded-full border border-zinc-200 bg-white/95 px-2 sm:px-3 py-1 shadow-md backdrop-blur-md ring-1 ring-black/5 dark:border-zinc-800 dark:bg-zinc-900/90 max-w-[95vw] overflow-x-auto">
+            <ul className="flex items-center gap-0.5 sm:gap-1">
+              {items.map((item) => (
+                <li key={item.href}>
+                  {item.href.startsWith("http") ? (
+                    <a
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block rounded-full px-2.5 sm:px-3 py-1 text-sm transition text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                    >
+                      {item.label}
+                    </a>
+                  ) : (
+                    <Link
+                      href={item.href}
+                      className={[
+                        "block rounded-full px-2.5 sm:px-3 py-1 text-sm transition",
+                        isActive(item.href)
+                          ? "font-semibold text-teal-500"
+                          : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800",
+                      ].join(" ")}
+                    >
+                      {item.label}
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </nav>
+          {/* Botão fora do menu, à direita */}
+          <Link
+            href="/para-proprietarios"
+            className="pointer-events-auto absolute right-4 top-1/2 -translate-y-1/2 inline-flex h-8 items-center whitespace-nowrap rounded-full bg-zinc-900 px-3 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+          >
+            Proprietários
+          </Link>
+        </div>
       </div>
 
       {/* Mobile hamburger button */}
@@ -157,6 +166,15 @@ function MobileMenu({
               </div>
               <nav className="px-2 py-2">
                 <ul className="space-y-0.5">
+                  <li>
+                    <Link
+                      href="/para-proprietarios"
+                      onClick={() => setOpen(false)}
+                      className="block rounded-lg px-3 py-2 text-sm font-medium text-white bg-zinc-900 hover:bg-zinc-800"
+                    >
+                      Proprietários
+                    </Link>
+                  </li>
                   {items.map((item) => (
                     <li key={item.href}>
                       {item.href.startsWith("http") ? (
