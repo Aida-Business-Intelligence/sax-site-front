@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { getMapboxToken } from "@/lib/mapbox";
+import { getMapboxToken, siteMapStyle } from "@/lib/mapbox";
 import { getProperties } from "@/services/properties";
 import type { Property } from "@/types/realEstate";
 
@@ -23,7 +23,7 @@ export default function HomeMap() {
     mapboxgl.accessToken = token;
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: "mapbox://styles/mapbox/dark-v11",
+      style: siteMapStyle,
       center: [-56, -15], // mesmo centro da página /imoveis/mapa
       zoom: 2.1,
       pitch: 0,

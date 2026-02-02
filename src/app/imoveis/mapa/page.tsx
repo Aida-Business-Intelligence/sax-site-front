@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { getMapboxToken } from "@/lib/mapbox";
+import { getMapboxToken, siteMapStyle } from "@/lib/mapbox";
 import { getProperties, getCities } from "@/services/properties";
 import type { Property, City } from "@/types/realEstate";
 import {
@@ -84,7 +84,7 @@ export default function MapaPage() {
       window.matchMedia?.("(max-width: 767px)").matches;
     const map = new mapboxgl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/mapbox/dark-v11",
+      style: siteMapStyle,
       center: INITIAL_CENTER, // South America center (globe view)
       zoom: INITIAL_ZOOM,
       pitch: INITIAL_PITCH,

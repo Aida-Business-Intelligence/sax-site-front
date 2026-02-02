@@ -15,11 +15,13 @@ type Props = {
   markers?: Marker[];
   show3DBuildings?: boolean;
   styleUrl?: string;
-  markerStyle?: "default" | "teal-glow";
+  markerStyle?: "default" | "teal-glow" | "neon-blue";
   projectionGlobe?: boolean;
   minZoom?: number;
   maxZoom?: number;
   showControls?: boolean;
+  autoRotate?: boolean;
+  autoRotateSpeedDegPerSec?: number; // positive rotates eastward
   className?: string;
 };
 
@@ -36,12 +38,17 @@ export default function Map({
   minZoom,
   maxZoom,
   showControls = true,
+  autoRotate = false,
+  autoRotateSpeedDegPerSec = 0.6,
   className,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markerObjs = useRef<mapboxgl.Marker[]>([]);
   const [mapReady, setMapReady] = useState(false);
+  const rotateRaf = useRef<number | null>(null);
+  const lastTs = useRef<number>(0);
+  const pauseUntil = useRef<number>(0);
 
   const token = useMemo(() => getMapboxToken(), []);
 
@@ -169,6 +176,8 @@ export default function Map({
         markerObjs.current.forEach((m) => m.remove());
         markerObjs.current = [];
         setMapReady(false);
+        if (rotateRaf.current) cancelAnimationFrame(rotateRaf.current);
+        rotateRaf.current = null;
       }
     };
   }, [token, styleUrl, center.lng, center.lat, zoom, pitch, bearing, show3DBuildings, projectionGlobe, minZoom, maxZoom]);
@@ -190,6 +199,12 @@ export default function Map({
       if (markerStyle === "teal-glow") {
         el.style.background = "#14b8a6";
         el.style.boxShadow = "0 0 0 6px rgba(20,184,166,.2)";
+      } else if ((markerStyle as string) === "neon-blue") {
+        el.style.background = "#00D8FF"; // neon blue core
+        el.style.border = "2px solid rgba(255,255,255,0.95)"; // white contour
+        el.style.boxSizing = "border-box";
+        el.style.boxShadow =
+          "0 0 8px rgba(0,216,255,.9), 0 0 14px rgba(0,216,255,.55), 0 0 22px rgba(0,216,255,.35)";
       } else {
         el.style.background = "#111827";
       }
@@ -199,6 +214,65 @@ export default function Map({
       markerObjs.current.push(marker);
     });
   }, [markers, markerStyle, mapReady]);
+
+  // Soft auto-rotation around the globe (changes longitude), pauses on user interaction
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady || !autoRotate) return;
+
+    let disposed = false;
+
+    const tick = (ts: number) => {
+      if (disposed) return;
+      if (!lastTs.current) lastTs.current = ts;
+      const dt = Math.min(100, ts - lastTs.current); // clamp to avoid jumps when tab inactive
+      lastTs.current = ts;
+
+      // If user interacted recently, skip rotation
+      if (performance.now() < pauseUntil.current) {
+        rotateRaf.current = requestAnimationFrame(tick);
+        return;
+      }
+
+      const speed = autoRotateSpeedDegPerSec; // deg/sec
+      const delta = (speed * dt) / 1000;
+      // For distant globe views rotate longitude; when zoomed-in keep center and rotate bearing
+      if ((map as any).getProjection?.()?.name === "globe" && map.getZoom() <= 2.6) {
+        const c = map.getCenter();
+        const nextLng = ((c.lng + delta + 540) % 360) - 180; // wrap to [-180,180]
+        map.setCenter([nextLng, c.lat]);
+      } else {
+        const nextBearing = map.getBearing() + delta;
+        map.setBearing(nextBearing);
+      }
+
+      rotateRaf.current = requestAnimationFrame(tick);
+    };
+
+    // Pause on interactions and resume after 4s idle
+    const pause = () => {
+      pauseUntil.current = performance.now() + 4000;
+    };
+    const events: (keyof mapboxgl.MapboxEventHandler)[] = [
+      "dragstart",
+      "mousedown",
+      "touchstart",
+      "wheel",
+      "rotatestart",
+      "pitchstart",
+    ];
+    events.forEach((ev) => map.on(ev as any, pause));
+
+    rotateRaf.current = requestAnimationFrame(tick);
+
+    return () => {
+      disposed = true;
+      events.forEach((ev) => map.off(ev as any, pause));
+      if (rotateRaf.current) cancelAnimationFrame(rotateRaf.current);
+      rotateRaf.current = null;
+      lastTs.current = 0;
+    };
+  }, [autoRotate, autoRotateSpeedDegPerSec, mapReady]);
 
   return (
     <div

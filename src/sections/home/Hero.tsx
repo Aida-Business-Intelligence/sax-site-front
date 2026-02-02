@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Map from "@/components/map/Map";
+import { siteMapStyle } from "@/lib/mapbox";
 import { getProperties } from "@/services/properties";
 import HomeFilter from "@/sections/home/HomeFilter";
 
@@ -78,37 +79,79 @@ export default function Hero() {
 
       {/* Mapa (mobile): globo centralizado */}
       <div className="md:hidden -mt-2 flex justify-center">
-        <div className="relative w-[92vw] max-w-[380px] aspect-square overflow-hidden rounded-full border border-zinc-900/60">
+        <div className="relative w-[92vw] max-w-[380px] aspect-square overflow-hidden rounded-full border border-zinc-900/60 shadow-[0_20px_80px_rgba(0,0,0,0.35)]">
           <Map
             center={{ lng: -56, lat: -15 }}
             zoom={2.1}
             minZoom={2.1}
             pitch={0}
             bearing={0}
-            styleUrl="mapbox://styles/mapbox/dark-v11"
+            styleUrl={siteMapStyle}
             projectionGlobe
             markers={markers}
-            markerStyle="teal-glow"
+            markerStyle="neon-blue"
+            show3DBuildings
+            autoRotate
+            autoRotateSpeedDegPerSec={1.0}
             showControls={false}
             className="h-full w-full"
+          />
+          {/* 3D overlays (visual only) */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-full"
+            style={{
+              background:
+                "radial-gradient(closest-side, rgba(0,0,0,0) 62%, rgba(0,0,0,0.36) 100%)",
+            }}
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-full"
+            style={{
+              background:
+                "radial-gradient(circle at 28% 22%, rgba(255,255,255,0.14), rgba(255,255,255,0) 42%)",
+              mixBlendMode: "screen",
+            }}
           />
         </div>
       </div>
 
       {/* Mapa interativo dentro do círculo (mesma config de /imoveis/mapa) */}
       <div className="pointer-events-auto absolute right-0 hidden pr-4 md:block z-0 top-24 md:top-28 lg:top-32 xl:top-36">
-        <div className="pointer-events-auto relative md:h-[420px] md:w-[420px] lg:h-[520px] lg:w-[520px] xl:h-[560px] xl:w-[560px] overflow-hidden rounded-full border border-zinc-900/60">
+        <div className="pointer-events-auto relative md:h-[420px] md:w-[420px] lg:h-[520px] lg:w-[520px] xl:h-[560px] xl:w-[560px] overflow-hidden rounded-full border border-zinc-900/60 shadow-[0_30px_120px_rgba(0,0,0,0.35)]">
           <Map
             center={{ lng: -56, lat: -15 }}
             zoom={2.1}
             minZoom={2.1}
             pitch={0}
             bearing={0}
-            styleUrl="mapbox://styles/mapbox/dark-v11"
+            styleUrl={siteMapStyle}
             projectionGlobe
             markers={markers}
-            markerStyle="teal-glow"
+            markerStyle="neon-blue"
+            show3DBuildings
+            autoRotate
+            autoRotateSpeedDegPerSec={1.0}
             className="h-full w-full"
+          />
+          {/* 3D overlays (visual only) */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-full"
+            style={{
+              background:
+                "radial-gradient(closest-side, rgba(0,0,0,0) 62%, rgba(0,0,0,0.36) 100%)",
+            }}
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-full"
+            style={{
+              background:
+                "radial-gradient(circle at 28% 22%, rgba(255,255,255,0.12), rgba(255,255,255,0) 42%)",
+              mixBlendMode: "screen",
+            }}
           />
         </div>
       </div>
