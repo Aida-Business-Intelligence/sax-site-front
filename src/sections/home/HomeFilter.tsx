@@ -915,7 +915,7 @@ export default function HomeFilter({
                                 {/* Ícone decorativo sobre a faixa selecionada */}
                                 <div className="pointer-events-none absolute bottom-7 left-1/2 -translate-x-1/2">
                                   <img
-                                    src="/assets/icons/union.png"
+                                    src="/assets/icons/Union.png"
                                     alt="Distribuição de preços"
                                     className="h-10 w-[180px] object-contain opacity-95 dark:opacity-90"
                                     style={{
