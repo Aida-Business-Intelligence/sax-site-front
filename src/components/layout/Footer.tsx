@@ -6,7 +6,7 @@ export default function Footer() {
   const year = new Date().getFullYear();
   return (
     <footer className="fixed bottom-0 inset-x-0 z-50 w-full border-t border-zinc-800 bg-zinc-900/95 text-zinc-200 backdrop-blur">
-      <div className="w-full px-4 py-2 sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 py-2 sm:px-6">
         <div className="flex flex-wrap items-center justify-center md:justify-between gap-3 text-xs sm:text-sm">
           {/* Left: Registry and location */}
           <div className="w-full md:w-auto text-center md:text-left whitespace-nowrap md:whitespace-normal break-words">

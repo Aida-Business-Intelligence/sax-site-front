@@ -1,4 +1,5 @@
 import { buildMetadata } from "@/lib/seo";
+import { AboutView } from "@/sections/sobre/AboutView";
 
 export const revalidate = 1800;
 
@@ -18,10 +19,7 @@ export default function SobrePage() {
       />
 
       <div className="mx-auto max-w-7xl px-4 pt-32 pb-10 sm:px-6 sm:pt-36">
-        <h1 className="mb-4 text-3xl font-semibold tracking-tight">Sobre nós</h1>
-        <p className="text-zinc-700 dark:text-zinc-300">
-          Conteúdo institucional em breve.
-        </p>
+        <AboutView />
       </div>
     </div>
   );

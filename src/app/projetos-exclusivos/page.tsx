@@ -1,4 +1,5 @@
 import { buildMetadata } from "@/lib/seo";
+import { ExclusiveProjectsView } from "@/sections/projetos-exclusivos/ExclusiveProjectsView";
 
 export const revalidate = 1800;
 
@@ -18,13 +19,7 @@ export default function ProjetosExclusivosPage() {
       />
 
       <div className="mx-auto max-w-7xl px-4 pt-32 pb-10 sm:px-6 sm:pt-36">
-        <h1 className="mb-4 text-3xl font-semibold tracking-tight">
-          Projetos exclusivos
-        </h1>
-        <p className="text-zinc-700 dark:text-zinc-300">
-          Em breve listaremos nossos projetos exclusivos e lançamentos
-          selecionados.
-        </p>
+        <ExclusiveProjectsView />
       </div>
     </div>
   );
