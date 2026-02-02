@@ -3,6 +3,7 @@ import Link from "next/link";
 import OwnerAuth from "@/sections/proprietarios/OwnerAuth";
 
 export const revalidate = 1800;
+export const dynamic = "force-dynamic";
 
 export const metadata = buildMetadata({
   title: "Para Proprietários",
