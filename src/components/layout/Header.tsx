@@ -7,7 +7,14 @@ import { usePathname } from "next/navigation";
 import { Menu, X, Filter } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
-export default function Header() {
+const DEFAULT_LOGO = "/assets/logo/logo2.png";
+
+type HeaderProps = {
+  /** URL completa da logo do site (vinda da API / site-config). Quando definida, substitui a logo padrão. */
+  logoSrc?: string | null;
+};
+
+export default function Header({ logoSrc = null }: HeaderProps) {
   const pathname = usePathname();
   const items = [
     { href: "/imoveis", label: "Imóveis" },
@@ -47,13 +54,24 @@ export default function Header() {
             className="inline-flex items-center gap-2 pointer-events-auto"
             aria-label="Página inicial"
           >
-            <Image
-              src="/assets/logo/logo2.png"
-              alt="SAX Imóveis"
-              width={140}
-              height={36}
-              priority
-            />
+            {logoSrc ? (
+              <img
+                src={logoSrc}
+                alt="Logo do site"
+                width={140}
+                height={36}
+                className="h-9 w-auto object-contain"
+                style={{ maxHeight: 36 }}
+              />
+            ) : (
+              <Image
+                src={DEFAULT_LOGO}
+                alt="SAX Imóveis"
+                width={140}
+                height={36}
+                priority
+              />
+            )}
           </Link>
         </div>
       </header>

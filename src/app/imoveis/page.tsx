@@ -1,8 +1,8 @@
-import { getProperties } from "@/services/properties";
+import { getProperties, getSectionsWithProperties, getTags, getSiteConfig } from "@/services/properties";
 import { buildMetadata } from "@/lib/seo";
 import { PropertyCatalog } from "@/sections/imoveis/PropertyCatalog";
 
-export const revalidate = 1800; // ISR: 30m
+export const revalidate = 0; // sempre dados frescos (atualiza no PDV = aparece ao recarregar)
 
 export const metadata = buildMetadata({
   title: "Imóveis à venda",
@@ -11,8 +11,20 @@ export const metadata = buildMetadata({
     "Explore nossa seleção de imóveis premium à venda nas melhores regiões do Brasil.",
 });
 
-export default async function ImoveisPage() {
-  const properties = await getProperties();
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default async function ImoveisPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const params = await searchParams;
+  const [properties, sectionsWithProperties, tags, siteConfig] = await Promise.all([
+    getProperties(),
+    getSectionsWithProperties(),
+    getTags(),
+    getSiteConfig(),
+  ]);
   return (
     <div className="relative min-h-screen pb-28">
       {/* Background illustration with 3% opacity, full width */}
@@ -23,7 +35,14 @@ export default async function ImoveisPage() {
       />
 
       <div className="mx-auto max-w-7xl px-4 pt-8 pb-10 sm:px-6 md:pt-10">
-        <PropertyCatalog properties={properties} />
+        <PropertyCatalog
+          properties={properties}
+          sectionsWithProperties={sectionsWithProperties}
+          tags={tags}
+          initialSearchParams={params}
+          featuredPropertyIds={siteConfig?.featuredPropertyIds ?? []}
+          partnerLogos={siteConfig?.partnerLogos ?? []}
+        />
       </div>
     </div>
   );

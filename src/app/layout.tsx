@@ -6,6 +6,8 @@ import Script from "next/script";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import MuiThemeProvider from "@/components/providers/MuiThemeProvider";
+import { getSiteConfig } from "@/services/properties";
+import { getSaxApiBase } from "@/lib/sax-api";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,7 +46,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -53,9 +55,27 @@ export default function RootLayout({
   const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
   const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 
+  let logoSrc: string | null = null;
+  let faviconSrc: string | null = null;
+  let footerContent: Record<string, unknown> | null = null;
+  try {
+    const config = await getSiteConfig();
+    footerContent = config?.footerContent ?? null;
+    const base = getSaxApiBase();
+    if (config?.logoUrl && base) {
+      logoSrc = `${base}${config.logoUrl.startsWith("/") ? config.logoUrl : `/${config.logoUrl}`}`;
+    }
+    if (config?.faviconUrl && base) {
+      faviconSrc = `${base}${config.faviconUrl.startsWith("/") ? config.faviconUrl : `/${config.faviconUrl}`}`;
+    }
+  } catch {
+    // ignora; Header usa logo padrão
+  }
+
   return (
     <html lang="pt-BR">
       <head>
+        {faviconSrc ? <link rel="icon" href={faviconSrc} /> : null}
         {/* Google Tag Manager */}
         {GTM_ID ? (
           <Script id="gtm" strategy="afterInteractive">
@@ -108,6 +128,7 @@ export default function RootLayout({
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
+        suppressHydrationWarning
       >
           {GTM_ID ? (
             <noscript>
@@ -120,14 +141,14 @@ export default function RootLayout({
             </noscript>
           ) : null}
         <MuiThemeProvider>
-          <Header />
+          <Header logoSrc={logoSrc} />
           {/* Top mask to fade content under fixed header/menu */}
           {/* Solid cap under the fixed header (desktop/tablet only) */}
           <div className="pointer-events-none fixed inset-x-0 top-0 z-40 hidden h-12 bg-white dark:bg-zinc-900 md:block" />
           {/* Stronger fade below the cap (desktop/tablet only) */}
           <div className="pointer-events-none fixed inset-x-0 top-12 z-40 hidden h-24 bg-linear-to-b from-white/98 via-white/80 to-transparent dark:from-zinc-900 dark:via-zinc-900/85 md:block" />
           <main className="flex-1 pb-24">{children}</main>
-          <Footer />
+          <Footer footerContent={footerContent} />
         </MuiThemeProvider>
       </body>
     </html>

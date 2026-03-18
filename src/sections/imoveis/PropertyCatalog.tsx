@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Property } from "@/types/realEstate";
+import type { SectionDto } from "@/lib/sax-api";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import {
   Select,
@@ -16,9 +17,36 @@ import {
 import HomeFilter from "@/sections/home/HomeFilter";
 import PropertySection from "./PropertySection";
 import FeaturedBanner from "./FeaturedBanner";
+import FeaturedCarousel from "./FeaturedCarousel";
 import MapTeaser from "./MapTeaser";
 import PartnersSection from "./PartnersSection";
 import { MapPin, ArrowLeftRight, Home, Tag, Bed } from "lucide-react";
+
+function getParam(
+  params: Record<string, string | string[] | undefined> | undefined,
+  key: string
+): string | undefined {
+  if (!params || !(key in params)) return undefined;
+  const v = params[key];
+  return Array.isArray(v) ? v[0] : (v as string | undefined);
+}
+
+function buildVerTodosHref(
+  sectionSlug: string,
+  filters: FormValues
+): string {
+  const q = new URLSearchParams();
+  q.set("secao", sectionSlug);
+  const mode = filters.mode ?? "comprar";
+  q.set("mode", mode);
+  if (filters.city && filters.city !== "__all__") q.set("city", filters.city);
+  if (filters.type) q.set("type", filters.type);
+  if (filters.bedrooms) q.set("bedrooms", filters.bedrooms);
+  if (filters.priceRange) q.set("priceRange", filters.priceRange);
+  if (filters.tag && filters.tag !== "__all__") q.set("tag", filters.tag);
+  if (filters.builder && filters.builder !== "__all__") q.set("builder", filters.builder);
+  return `/imoveis?${q.toString()}`;
+}
 
 const schema = z.object({
   city: z.string().optional(),
@@ -31,13 +59,126 @@ const schema = z.object({
 });
 type FormValues = z.input<typeof schema>;
 
-function PropertyCatalog({ properties }: { properties: Property[] }) {
+type SectionWithProperties = { section: SectionDto; properties: Property[] };
+
+function applyFilter(
+  list: Property[],
+  { city, mode, type, bedrooms, priceRange, builder, tag }: FormValues
+): Property[] {
+  const modeNorm = mode ? String(mode).toLowerCase().trim() : "";
+
+  return list.filter((p) => {
+    if (modeNorm === "alugar") {
+      const priceAluguelVal =
+        typeof p.priceAluguel === "number" && Number.isFinite(p.priceAluguel)
+          ? p.priceAluguel
+          : null;
+      const hasPriceAluguel = priceAluguelVal != null && priceAluguelVal > 0;
+      const types = Array.isArray(p.transactionTypes) ? p.transactionTypes : [];
+      const hasAluguelType =
+        types.length > 0 &&
+        types.some((t) =>
+          ["aluguel", "locação", "locacao"].includes(String(t).toLowerCase().trim())
+        );
+      if (!hasPriceAluguel && !hasAluguelType) return false;
+    }
+
+    if (city && city !== "__all__") {
+      const c = `${p.address.city}-${p.address.state}`;
+      if (c !== city) return false;
+    }
+    if (modeNorm === "comprar" || modeNorm === "alugar") {
+      const hasVenda =
+        (typeof p.priceVenda === "number" && p.priceVenda > 0) ||
+        (Array.isArray(p.transactionTypes) &&
+          p.transactionTypes.some((t) =>
+            ["venda", "compra"].includes(String(t).toLowerCase().trim())
+          ));
+      const hasAluguel =
+        (typeof p.priceAluguel === "number" && p.priceAluguel > 0) ||
+        (Array.isArray(p.transactionTypes) &&
+          p.transactionTypes.length > 0 &&
+          p.transactionTypes.some((t) =>
+            ["aluguel", "locação", "locacao"].includes(String(t).toLowerCase().trim())
+          ));
+      if (modeNorm === "comprar") {
+        if (!hasVenda && !hasAluguel) return true;
+        if (!hasVenda) return false;
+      }
+    }
+    if (type && String(p.type).toLowerCase() !== String(type).toLowerCase())
+      return false;
+    if (bedrooms) {
+      const min = Number(bedrooms);
+      if (!Number.isNaN(min) && p.bedrooms < min) return false;
+    }
+    if (priceRange) {
+      const priceForRange =
+        mode === "alugar" && p.priceAluguel != null && Number(p.priceAluguel) > 0
+          ? Number(p.priceAluguel)
+          : mode === "comprar" && p.priceVenda != null && Number(p.priceVenda) > 0
+            ? Number(p.priceVenda)
+            : p.price;
+      if (priceRange === "lt500k" && !(priceForRange <= 500000)) return false;
+      if (priceRange === "500k-1m" && !(priceForRange >= 500000 && priceForRange <= 1000000))
+        return false;
+      if (priceRange === "1m-2m" && !(priceForRange >= 1000000 && priceForRange <= 2000000))
+        return false;
+      if (priceRange === "gt2m" && !(priceForRange > 2000000)) return false;
+    }
+    if (builder && builder !== "__all__" && p.builder !== builder) return false;
+    if (tag && tag !== "__all__") {
+      const tagList = p.tagImovel ?? [];
+      const hasTag =
+        tagList.includes(tag) ||
+        tagList.some(
+          (t) => t.toLowerCase() === tag.toLowerCase()
+        );
+      if (!hasTag) return false;
+    }
+    return true;
+  });
+}
+
+function PropertyCatalog({
+  properties,
+  sectionsWithProperties = [],
+  tags = [],
+  initialSearchParams,
+  featuredPropertyIds = [],
+  partnerLogos = [],
+}: {
+  properties: Property[];
+  sectionsWithProperties?: SectionWithProperties[];
+  tags?: { id: string; name: string; slug: string; sortOrder?: number }[];
+  initialSearchParams?: Record<string, string | string[] | undefined>;
+  featuredPropertyIds?: string[];
+  partnerLogos?: { url: string; name?: string }[];
+}) {
+  const defaultValuesFromParams = useMemo(
+    () => ({
+      mode: (getParam(initialSearchParams, "mode") as "comprar" | "alugar") ?? "comprar",
+      tag: getParam(initialSearchParams, "tag") ?? "__all__",
+      builder: getParam(initialSearchParams, "builder") ?? "__all__",
+      city: getParam(initialSearchParams, "city"),
+      type: getParam(initialSearchParams, "type") as FormValues["type"],
+      bedrooms: getParam(initialSearchParams, "bedrooms"),
+      priceRange: getParam(initialSearchParams, "priceRange") as FormValues["priceRange"],
+    }),
+    [initialSearchParams]
+  );
+
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      mode: "comprar",
-    },
+    defaultValues: defaultValuesFromParams,
   });
+
+  const sectionSlugFromUrl = getParam(initialSearchParams, "secao");
+
+  useEffect(() => {
+    if (!initialSearchParams) return;
+    form.reset(defaultValuesFromParams);
+  }, [initialSearchParams, form, defaultValuesFromParams]);
 
   const [selected, setSelected] = useState<Property | null>(null);
 
@@ -52,6 +193,7 @@ function PropertyCatalog({ properties }: { properties: Property[] }) {
   }, [properties]);
 
   const watchValues = form.watch();
+  const watchMode = form.watch("mode");
   const builderOptions = useMemo(() => {
     const { city } = watchValues;
     const set = new Set<string>();
@@ -65,41 +207,48 @@ function PropertyCatalog({ properties }: { properties: Property[] }) {
   }, [properties, watchValues.city]);
 
   const tagOptions = useMemo(() => {
+    if (tags.length > 0) {
+      return tags
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name))
+        .map((t) => t.name);
+    }
     const set = new Set<string>();
     (properties ?? []).forEach((p) => {
-      (p.amenities ?? []).forEach((a) => set.add(a));
+      (p.tagImovel ?? []).forEach((a) => set.add(a));
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [properties]);
+  }, [tags, properties]);
 
-  const filtered = useMemo(() => {
-    const { city, type, bedrooms, priceRange, builder, tag } = watchValues;
-    return (properties ?? []).filter((p) => {
-      if (city && city !== "__all__") {
-        const c = `${p.address.city}-${p.address.state}`;
-        if (c !== city) return false;
-      }
-      if (type && p.type !== type) return false;
-      if (bedrooms) {
-        const min = Number(bedrooms);
-        if (!Number.isNaN(min) && p.bedrooms < min) return false;
-      }
-      if (priceRange) {
-        if (priceRange === "lt500k" && !(p.price <= 500000)) return false;
-        if (priceRange === "500k-1m" && !(p.price >= 500000 && p.price <= 1000000))
-          return false;
-        if (priceRange === "1m-2m" && !(p.price >= 1000000 && p.price <= 2000000))
-          return false;
-        if (priceRange === "gt2m" && !(p.price > 2000000)) return false;
-      }
-      if (builder && p.builder !== builder) return false;
-      if (tag) {
-        const list = p.amenities ?? [];
-        if (!list.includes(tag)) return false;
-      }
-      return true;
-    });
-  }, [properties, watchValues]);
+  const filtered = useMemo(
+    () => applyFilter(properties ?? [], watchValues),
+    [properties, watchValues, watchMode]
+  );
+
+  const filteredSections = useMemo(() => {
+    const withFiltered = sectionsWithProperties.map(({ section, properties: sectionProps }) => ({
+      section,
+      properties: applyFilter(sectionProps, watchValues),
+    }));
+    return withFiltered.filter(({ properties }) => properties.length > 0);
+  }, [sectionsWithProperties, watchValues, watchMode]);
+
+  const displaySections = useMemo(() => {
+    if (!sectionSlugFromUrl) return filteredSections;
+    return filteredSections.filter(
+      (s) => s.section.slug === sectionSlugFromUrl
+    );
+  }, [filteredSections, sectionSlugFromUrl]);
+
+  const featuredProperties = useMemo(() => {
+    if (!featuredPropertyIds?.length) return [];
+    const idSet = new Set(featuredPropertyIds);
+    const byId = new Map((properties ?? []).map((p) => [p.id, p]));
+    return featuredPropertyIds
+      .map((id) => byId.get(id))
+      .filter((p): p is Property => p != null);
+  }, [properties, featuredPropertyIds]);
+
+  const bannerProperty = (filtered[0] ?? properties[0]) ?? null;
 
   return (
     <>
@@ -294,18 +443,15 @@ function PropertyCatalog({ properties }: { properties: Property[] }) {
                     <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
                       <Tag className="h-4 w-4 text-black/15" />
                       <Select
-                        value={field.value ?? undefined}
+                        value={field.value ?? "__all__"}
                         onValueChange={field.onChange}
-                        disabled={tagOptions.length === 0}
                         className="w-full text-black/80 border-0 bg-transparent px-0"
                       >
-                        <SelectTrigger
-                          className="w-full"
-                          disabled={tagOptions.length === 0}
-                        >
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="__all__">Todas</SelectItem>
                           {tagOptions.map((name) => (
                             <SelectItem key={name} value={name}>
                               {name}
@@ -331,18 +477,15 @@ function PropertyCatalog({ properties }: { properties: Property[] }) {
                     <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
                       <Home className="h-4 w-4 text-black/15" />
                       <Select
-                        value={field.value ?? undefined}
+                        value={field.value ?? "__all__"}
                         onValueChange={field.onChange}
-                        disabled={builderOptions.length === 0}
                         className="w-full text-black/80 border-0 bg-transparent px-0"
                       >
-                        <SelectTrigger
-                          className="w-full"
-                          disabled={builderOptions.length === 0}
-                        >
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Construtora" />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="__all__">Todas</SelectItem>
                           {builderOptions.map((name) => (
                             <SelectItem key={name} value={name}>
                               {name}
@@ -369,44 +512,32 @@ function PropertyCatalog({ properties }: { properties: Property[] }) {
 
       {/* Drawer anterior do mobile removido em favor do HomeFilter compartilhado */}
 
-      {/* Seções com base no filtro */}
-      <PropertySection
-        title="Melhores investimentos"
-        href="/imoveis?secao=investimentos"
-        properties={filtered}
-      />
-      <PropertySection
-        title="Mais procurados"
-        href="/imoveis?secao=mais-procurados"
-        properties={filtered}
-      />
-      <PropertySection
-        title="Lançamentos"
-        href="/imoveis?secao=lancamentos"
-        properties={filtered}
-      />
-      <FeaturedBanner property={filtered[0] ?? properties[0]} />
-      <PropertySection
-        title="Na planta"
-        href="/imoveis?secao=na-planta"
-        properties={filtered}
-      />
-      <PropertySection
-        title="Frente mar"
-        href="/imoveis?secao=frente-mar"
-        properties={filtered}
-      />
+      {/* Seções vindas do backend (só aparecem as que você cadastrou) */}
+      {displaySections.map(({ section, properties: sectionProps }) => (
+        <PropertySection
+          key={section.id}
+          title={section.title}
+          href={buildVerTodosHref(section.slug, watchValues)}
+          properties={sectionProps}
+          showAll={!!sectionSlugFromUrl}
+        />
+      ))}
+      {featuredProperties.length > 0 ? (
+        <FeaturedCarousel properties={featuredProperties} />
+      ) : bannerProperty ? (
+        <FeaturedBanner property={bannerProperty} />
+      ) : null}
       {/* Mapa + parceiros: mobile mostra sequencial; desktop mantém sticky */}
       <div className="md:hidden">
         <MapTeaser properties={filtered} />
-        <PartnersSection />
+        <PartnersSection partnerLogos={partnerLogos} />
       </div>
       <div className="relative hidden md:block">
         <div className="sticky top-66 z-10">
           <MapTeaser properties={filtered} />
         </div>
         <div aria-hidden="true" className="h-[560px]" />
-        <PartnersSection />
+        <PartnersSection partnerLogos={partnerLogos} />
       </div>
     </>
   );

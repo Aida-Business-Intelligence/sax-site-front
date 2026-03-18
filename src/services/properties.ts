@@ -1,4 +1,97 @@
 import { Property, City, Neighborhood } from "@/types/realEstate";
+import {
+  hasSaxApi,
+  getSaxApiBase,
+  fetchSections,
+  fetchTags,
+  fetchSiteConfig as fetchSiteConfigApi,
+  fetchProperties as fetchPropertiesApi,
+  fetchPropertyBySlug as fetchPropertyBySlugApi,
+} from "@/lib/sax-api";
+import type { SectionDto, TagDto } from "@/lib/sax-api";
+
+function fullImageUrl(url: string): string {
+  const s = String(url ?? "").trim();
+  if (!s) return s;
+  if (s.startsWith("http://") || s.startsWith("https://")) return s;
+  const base = getSaxApiBase();
+  return base ? `${base}${s.startsWith("/") ? s : `/${s}`}` : s;
+}
+
+export function mapApiPropertyToProperty(p: Record<string, unknown>): Property {
+  const addr = (p.address as Record<string, unknown>) ?? {};
+  const cover = (p.coverImage as Record<string, unknown>) ?? {};
+  const type = p.type as string;
+  const validType =
+    type === "casa" ||
+    type === "apartamento" ||
+    type === "terreno" ||
+    type === "comercial"
+      ? type
+      : "apartamento";
+  const transactionTypes = Array.isArray(p.transactionTypes)
+    ? (p.transactionTypes as string[])
+    : undefined;
+  const comodidades = Array.isArray(p.comodidades) ? (p.comodidades as string[]) : undefined;
+  const tagImovel = Array.isArray(p.tagImovel) ? (p.tagImovel as string[]) : undefined;
+  const coverUrl = fullImageUrl(String(cover.url ?? ""));
+  return {
+    id: String(p.id),
+    slug: String(p.slug),
+    title: String(p.title),
+    description: String(p.description ?? ""),
+    price: Number(p.price ?? 0),
+    bedrooms: Number(p.bedrooms ?? 0),
+    bathrooms: Number(p.bathrooms ?? 0),
+    area: Number(p.area ?? 0),
+    type: validType as Property["type"],
+    address: {
+      neighborhood: String(addr.neighborhood ?? ""),
+      city: String(addr.city ?? ""),
+      state: String(addr.state ?? ""),
+      street: addr.street != null ? String(addr.street) : undefined,
+      zip: addr.zip != null ? String(addr.zip) : undefined,
+      lat: addr.lat != null ? Number(addr.lat) : undefined,
+      lng: addr.lng != null ? Number(addr.lng) : undefined,
+    },
+    coverImage: {
+      url: coverUrl,
+      alt: String(cover.alt ?? ""),
+      width: cover.width != null ? Number(cover.width) : undefined,
+      height: cover.height != null ? Number(cover.height) : undefined,
+    },
+    images: Array.isArray(p.images)
+      ? (p.images as Array<{ url: string; alt: string }>).map((img) => ({
+          url: fullImageUrl(img?.url ?? ""),
+          alt: img?.alt ?? "",
+        }))
+      : undefined,
+    amenities: [],
+    ref: p.ref != null ? String(p.ref) : null,
+    priceVenda:
+      p.priceVenda != null && Number.isFinite(Number(p.priceVenda)) && Number(p.priceVenda) > 0
+        ? Number(p.priceVenda)
+        : null,
+    priceAluguel:
+      p.priceAluguel != null && Number.isFinite(Number(p.priceAluguel)) && Number(p.priceAluguel) > 0
+        ? Number(p.priceAluguel)
+        : null,
+    priceCrowdfunding: p.priceCrowdfunding != null ? Number(p.priceCrowdfunding) : null,
+    transactionTypes,
+    suites: p.suites != null ? Number(p.suites) : null,
+    demiSuites: p.demiSuites != null ? Number(p.demiSuites) : null,
+    garage: p.garage != null ? Number(p.garage) : null,
+    comodidades,
+    mobiliado: Boolean(p.mobiliado),
+    aceita_pets: Boolean(p.aceita_pets),
+    aceita_permuta: Boolean(p.aceita_permuta),
+    em_construcao: Boolean(p.em_construcao),
+    parceria: Boolean(p.parceria),
+    dataPrevistaEntrega: p.dataPrevistaEntrega != null ? String(p.dataPrevistaEntrega) : null,
+    tagImovel,
+    builder: p.builder != null ? String(p.builder) : undefined,
+  };
+}
 
 // Mock data for initial scaffolding
 const properties: Property[] = [
@@ -432,13 +525,85 @@ const neighborhoods: Neighborhood[] = [
   },
 ];
 
+/** Tags cadastradas no PDV (para filtro no site). Sem API retorna []. */
+export async function getTags(): Promise<TagDto[]> {
+  if (!hasSaxApi()) return [];
+  try {
+    return await fetchTags();
+  } catch {
+    return [];
+  }
+}
+
+/** Seções ativas com imóveis (só quando API está configurada). Sem API retorna []. */
+export async function getSectionsWithProperties(): Promise<
+  { section: SectionDto; properties: Property[] }[]
+> {
+  if (!hasSaxApi()) return [];
+  try {
+    const sections = await fetchSections();
+    const active = sections.filter((s) => s.active);
+    const withProps = await Promise.all(
+      active.map(async (section) => {
+        const list = await fetchPropertiesApi({ sectionId: section.id });
+        const properties = list.map((p) =>
+          mapApiPropertyToProperty(p as Record<string, unknown>)
+        );
+        return { section, properties };
+      })
+    );
+    return withProps.sort((a, b) => a.section.sortOrder - b.section.sortOrder);
+  } catch {
+    return [];
+  }
+}
+
+export async function getSiteConfig(): Promise<{
+  featuredPropertyIds: string[];
+  logoUrl: string | null;
+  faviconUrl: string | null;
+  menuItems: string | null;
+  heroContent: Record<string, unknown> | null;
+  partnerLogos: { url: string; name?: string }[];
+  aboutContent: Record<string, unknown> | null;
+  footerContent: Record<string, unknown> | null;
+}> {
+  if (hasSaxApi()) {
+    try {
+      return await fetchSiteConfigApi();
+    } catch {
+      return { featuredPropertyIds: [], logoUrl: null, faviconUrl: null, menuItems: null, heroContent: null, partnerLogos: [], aboutContent: null, footerContent: null };
+    }
+  }
+  return { featuredPropertyIds: [], logoUrl: null, faviconUrl: null, menuItems: null, heroContent: null, partnerLogos: [], aboutContent: null, footerContent: null };
+}
+
 export async function getProperties(): Promise<Property[]> {
+  if (hasSaxApi()) {
+    try {
+      const list = await fetchPropertiesApi();
+      return list.map((p) =>
+        mapApiPropertyToProperty(p as Record<string, unknown>)
+      );
+    } catch {
+      return properties;
+    }
+  }
   return properties;
 }
 
 export async function getPropertyBySlug(
   slug: string
 ): Promise<Property | undefined> {
+  if (hasSaxApi()) {
+    try {
+      const p = await fetchPropertyBySlugApi(slug);
+      if (!p || typeof p !== "object") return undefined;
+      return mapApiPropertyToProperty(p as Record<string, unknown>);
+    } catch {
+      return properties.find((p) => p.slug === slug);
+    }
+  }
   return properties.find((p) => p.slug === slug);
 }
 

@@ -1,12 +1,9 @@
 import Hero from "@/sections/home/Hero";
+import { getSiteConfig } from "@/services/properties";
 
-
-export const revalidate = 3600; // ISR: 1h
+export const revalidate = 0; // sempre dados frescos (edição no PDV reflete ao recarregar)
 
 export default async function Home() {
-  return (
-    <>
-      <Hero />
-    </>
-  );
+  const config = await getSiteConfig();
+  return <Hero heroContent={config?.heroContent ?? null} />;
 }

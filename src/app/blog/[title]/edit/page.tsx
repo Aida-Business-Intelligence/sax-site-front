@@ -1,10 +1,11 @@
 import { PostEditView } from "@/sections/blog/view";
 
 type Props = {
-  params: { title: string };
+  params: Promise<{ title: string }>;
 };
 
-export default function Page({ params }: Props) {
+export default async function Page({ params }: Props) {
+  const { title } = await params;
   return (
     <div className="relative min-h-screen pb-28">
       <div
@@ -13,7 +14,7 @@ export default function Page({ params }: Props) {
         style={{ backgroundImage: "url('/assets/images/home/bc1.png')" }}
       />
       <div className="mx-auto max-w-7xl px-4 pt-32 pb-10 sm:px-6 sm:pt-36">
-        <PostEditView slug={params.title} />
+        <PostEditView slug={title} />
       </div>
     </div>
   );

@@ -51,6 +51,23 @@ export type Property = {
 	amenities?: string[];
 	createdAt?: string;
 	updatedAt?: string;
+	// Campos de detalhe (página do imóvel / API by-slug)
+	ref?: string | null;
+	priceVenda?: number | null;
+	priceAluguel?: number | null;
+	priceCrowdfunding?: number | null;
+	transactionTypes?: string[];
+	suites?: number | null;
+	demiSuites?: number | null;
+	garage?: number | null;
+	comodidades?: string[];
+	mobiliado?: boolean;
+	aceita_pets?: boolean;
+	aceita_permuta?: boolean;
+	em_construcao?: boolean;
+	parceria?: boolean;
+	dataPrevistaEntrega?: string | null;
+	tagImovel?: string[];
 };
 
 

@@ -3,22 +3,24 @@ import { buildMetadata } from "@/lib/seo";
 export const dynamic = "force-dynamic";
 
 type Props = {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 };
 
 export const revalidate = 86400; // ISR diário
 
 export async function generateMetadata({ params }: Props) {
-  const name = params.slug.split("-")[0]?.toUpperCase() ?? "Bairro";
+  const { slug } = await params;
+  const name = slug.split("-")[0]?.toUpperCase() ?? "Bairro";
   return buildMetadata({
     title: `Imóveis no bairro ${name}`,
-    canonical: `/bairro/${params.slug}`,
+    canonical: `/bairro/${slug}`,
     description: `Conheça os melhores imóveis à venda no bairro ${name}.`,
   });
 }
 
-export default function BairroPage({ params }: Props) {
-  const name = params.slug.replaceAll("-", " ");
+export default async function BairroPage({ params }: Props) {
+  const { slug } = await params;
+  const name = slug.replaceAll("-", " ");
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
       <h1 className="mb-2 text-2xl font-semibold capitalize">Bairro: {name}</h1>

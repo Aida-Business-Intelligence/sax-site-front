@@ -1,25 +1,38 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Property } from "@/types/realEstate";
-import { ArrowRight, BadgeCheck, Bath, Bed, MapPin, Ruler } from "lucide-react";
+import { ArrowRight, BadgeCheck, Bath, Bed, Home, MapPin, Ruler } from "lucide-react";
+
+function hasValidCoverUrl(property?: Property | null): boolean {
+  const url = property?.coverImage?.url;
+  return typeof url === "string" && url.trim() !== "";
+}
 
 type Props = {
-  property: Property;
+  property?: Property | null;
 };
 
 export default function FeaturedBanner({ property }: Props) {
+  if (!property) return null;
+  const showImage = hasValidCoverUrl(property);
   return (
     <section className="mb-12">
       <div className="rounded-3xl border border-zinc-200 bg-gradient-to-r from-white to-zinc-50 p-6 shadow-sm dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-900/60 md:p-8">
         <div className="grid items-center gap-6 md:grid-cols-2">
-          <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl">
-            <Image
-              src={property.coverImage.url}
-              alt={property.coverImage.alt}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 50vw"
-            />
+          <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl bg-zinc-200/60 dark:bg-zinc-800/40">
+            {showImage ? (
+              <Image
+                src={property.coverImage!.url}
+                alt={property.coverImage!.alt || property.title}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-zinc-400 dark:text-zinc-500">
+                <Home className="size-16 opacity-50" aria-hidden />
+              </div>
+            )}
           </div>
 
           <div className="space-y-4">

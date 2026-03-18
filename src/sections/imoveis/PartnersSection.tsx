@@ -1,18 +1,29 @@
-import Image from "next/image";
+"use client";
 
-const logos = [
-  "/assets/partners/partner-1.png",
-  "/assets/partners/partner-2.png",
-  "/assets/partners/partner-3.png",
-  "/assets/partners/partner-4.png",
-  "/assets/partners/partner-5.png",
-  "/assets/partners/partner-6.png",
-  "/assets/partners/partner-7.png",
-  "/assets/partners/partner-8.png",
-];
+import { getSaxApiBase } from "@/lib/sax-api";
 
-export default function PartnersSection() {
-  const line = [...logos, ...logos];
+type PartnerLogoItem = { url: string; name?: string };
+
+type PartnersSectionProps = {
+  partnerLogos?: PartnerLogoItem[];
+};
+
+function fullUrl(url: string): string {
+  const s = (url || "").trim();
+  if (!s) return "";
+  if (s.startsWith("http://") || s.startsWith("https://")) return s;
+  const base = getSaxApiBase();
+  return base ? `${base}${s.startsWith("/") ? s : `/${s}`}` : s;
+}
+
+export default function PartnersSection({ partnerLogos = [] }: PartnersSectionProps) {
+  const list = Array.isArray(partnerLogos) ? partnerLogos : [];
+  const line = list.length > 0 ? [...list, ...list] : [];
+
+  if (line.length === 0) {
+    return null;
+  }
+
   return (
     <section className="py-14">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
@@ -27,19 +38,23 @@ export default function PartnersSection() {
 
         <div className="logo-rail relative mt-8 overflow-hidden">
           <div className="logo-track flex items-center gap-16 will-change-transform">
-            {line.map((src, i) => (
-              <div key={`${src}-${i}`} className="shrink-0">
-                <Image
-                  src={src}
-                  alt="Parceiro"
-                  width={220}
-                  height={80}
-                  className="h-12 w-auto grayscale opacity-70 transition hover:grayscale-0 hover:opacity-100"
-                />
-              </div>
-            ))}
+            {line.map((item, i) => {
+              const src = fullUrl(item.url);
+              const alt = item.name || "Parceiro";
+              if (!src) return null;
+              return (
+                <div key={`${item.url}-${i}`} className="shrink-0">
+                  <img
+                    src={src}
+                    alt={alt}
+                    width={220}
+                    height={80}
+                    className="h-12 w-auto object-contain grayscale opacity-70 transition hover:grayscale-0 hover:opacity-100"
+                  />
+                </div>
+              );
+            })}
           </div>
-          {/* Fade edges */}
           <div className="pointer-events-none absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-white to-transparent dark:from-zinc-950" />
           <div className="pointer-events-none absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-white to-transparent dark:from-zinc-950" />
         </div>
@@ -47,5 +62,3 @@ export default function PartnersSection() {
     </section>
   );
 }
-
-
