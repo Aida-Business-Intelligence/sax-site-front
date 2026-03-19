@@ -1,11 +1,14 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
+import { trackEvent } from "@/lib/analytics";
+import { trackEvent as trackCrm } from "@/lib/tracking-crm";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Property } from "@/types/realEstate";
 import type { SectionDto } from "@/lib/sax-api";
+import type { TransactionTypeOption } from "@/services/properties";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import {
   Select,
@@ -16,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import HomeFilter from "@/sections/home/HomeFilter";
 import PropertySection from "./PropertySection";
+import RecommendationsSection from "./RecommendationsSection";
 import FeaturedBanner from "./FeaturedBanner";
 import FeaturedCarousel from "./FeaturedCarousel";
 import MapTeaser from "./MapTeaser";
@@ -37,7 +41,7 @@ function buildVerTodosHref(
 ): string {
   const q = new URLSearchParams();
   q.set("secao", sectionSlug);
-  const mode = filters.mode ?? "comprar";
+  const mode = filters.mode ?? "venda";
   q.set("mode", mode);
   if (filters.city && filters.city !== "__all__") q.set("city", filters.city);
   if (filters.type) q.set("type", filters.type);
@@ -50,7 +54,7 @@ function buildVerTodosHref(
 
 const schema = z.object({
   city: z.string().optional(),
-  mode: z.enum(["comprar", "alugar"]).default("comprar"),
+  mode: z.string().default("venda"),
   type: z.enum(["casa", "apartamento", "terreno", "comercial"]).optional(),
   bedrooms: z.string().optional(),
   priceRange: z.enum(["lt500k", "500k-1m", "1m-2m", "gt2m"]).optional(),
@@ -61,50 +65,29 @@ type FormValues = z.input<typeof schema>;
 
 type SectionWithProperties = { section: SectionDto; properties: Property[] };
 
+function propertyHasTransactionType(p: Property, modeValue: string): boolean {
+  const m = String(modeValue).toLowerCase().trim();
+  const types = Array.isArray(p.transactionTypes) ? p.transactionTypes : [];
+  const hasType = types.some((t) => String(t).toLowerCase().trim() === m);
+  if (hasType) return true;
+  if (m === "venda" || m === "compra") return (typeof p.priceVenda === "number" && p.priceVenda > 0);
+  if (["aluguel", "locação", "locacao"].includes(m)) return (typeof p.priceAluguel === "number" && p.priceAluguel > 0);
+  if (m === "crowdfunding") return (typeof p.priceCrowdfunding === "number" && p.priceCrowdfunding > 0);
+  return false;
+}
+
 function applyFilter(
   list: Property[],
   { city, mode, type, bedrooms, priceRange, builder, tag }: FormValues
 ): Property[] {
-  const modeNorm = mode ? String(mode).toLowerCase().trim() : "";
+  const modeNorm = mode ? String(mode).toLowerCase().trim() : "venda";
 
   return list.filter((p) => {
-    if (modeNorm === "alugar") {
-      const priceAluguelVal =
-        typeof p.priceAluguel === "number" && Number.isFinite(p.priceAluguel)
-          ? p.priceAluguel
-          : null;
-      const hasPriceAluguel = priceAluguelVal != null && priceAluguelVal > 0;
-      const types = Array.isArray(p.transactionTypes) ? p.transactionTypes : [];
-      const hasAluguelType =
-        types.length > 0 &&
-        types.some((t) =>
-          ["aluguel", "locação", "locacao"].includes(String(t).toLowerCase().trim())
-        );
-      if (!hasPriceAluguel && !hasAluguelType) return false;
-    }
+    if (modeNorm && !propertyHasTransactionType(p, modeNorm)) return false;
 
     if (city && city !== "__all__") {
       const c = `${p.address.city}-${p.address.state}`;
       if (c !== city) return false;
-    }
-    if (modeNorm === "comprar" || modeNorm === "alugar") {
-      const hasVenda =
-        (typeof p.priceVenda === "number" && p.priceVenda > 0) ||
-        (Array.isArray(p.transactionTypes) &&
-          p.transactionTypes.some((t) =>
-            ["venda", "compra"].includes(String(t).toLowerCase().trim())
-          ));
-      const hasAluguel =
-        (typeof p.priceAluguel === "number" && p.priceAluguel > 0) ||
-        (Array.isArray(p.transactionTypes) &&
-          p.transactionTypes.length > 0 &&
-          p.transactionTypes.some((t) =>
-            ["aluguel", "locação", "locacao"].includes(String(t).toLowerCase().trim())
-          ));
-      if (modeNorm === "comprar") {
-        if (!hasVenda && !hasAluguel) return true;
-        if (!hasVenda) return false;
-      }
     }
     if (type && String(p.type).toLowerCase() !== String(type).toLowerCase())
       return false;
@@ -113,12 +96,13 @@ function applyFilter(
       if (!Number.isNaN(min) && p.bedrooms < min) return false;
     }
     if (priceRange) {
+      const m = String(mode ?? "venda").toLowerCase();
       const priceForRange =
-        mode === "alugar" && p.priceAluguel != null && Number(p.priceAluguel) > 0
+        (m === "aluguel" || m === "locação" || m === "locacao") && p.priceAluguel != null && Number(p.priceAluguel) > 0
           ? Number(p.priceAluguel)
-          : mode === "comprar" && p.priceVenda != null && Number(p.priceVenda) > 0
-            ? Number(p.priceVenda)
-            : p.price;
+          : m === "crowdfunding" && p.priceCrowdfunding != null && Number(p.priceCrowdfunding) > 0
+            ? Number(p.priceCrowdfunding)
+            : (p.priceVenda != null && Number(p.priceVenda) > 0 ? Number(p.priceVenda) : p.price);
       if (priceRange === "lt500k" && !(priceForRange <= 500000)) return false;
       if (priceRange === "500k-1m" && !(priceForRange >= 500000 && priceForRange <= 1000000))
         return false;
@@ -140,6 +124,12 @@ function applyFilter(
   });
 }
 
+const FALLBACK_TRANSACTION_TYPES: TransactionTypeOption[] = [
+  { value: "venda", label: "Venda" },
+  { value: "aluguel", label: "Aluguel" },
+  { value: "crowdfunding", label: "Crowdfunding" },
+];
+
 function PropertyCatalog({
   properties,
   sectionsWithProperties = [],
@@ -147,6 +137,7 @@ function PropertyCatalog({
   initialSearchParams,
   featuredPropertyIds = [],
   partnerLogos = [],
+  transactionTypes = [],
 }: {
   properties: Property[];
   sectionsWithProperties?: SectionWithProperties[];
@@ -154,18 +145,27 @@ function PropertyCatalog({
   initialSearchParams?: Record<string, string | string[] | undefined>;
   featuredPropertyIds?: string[];
   partnerLogos?: { url: string; name?: string }[];
+  transactionTypes?: TransactionTypeOption[];
 }) {
+  const typeOptions = transactionTypes.length > 0 ? transactionTypes : FALLBACK_TRANSACTION_TYPES;
+  const defaultMode = typeOptions[0]?.value ?? "venda";
+
   const defaultValuesFromParams = useMemo(
-    () => ({
-      mode: (getParam(initialSearchParams, "mode") as "comprar" | "alugar") ?? "comprar",
+    () => {
+      const modeParam = getParam(initialSearchParams, "mode");
+      const modeMapped = modeParam === "comprar" ? "venda" : modeParam === "alugar" ? "aluguel" : modeParam;
+      const mode = (modeMapped && typeOptions.some((t) => t.value === modeMapped)) ? modeMapped : defaultMode;
+      return {
+      mode,
       tag: getParam(initialSearchParams, "tag") ?? "__all__",
       builder: getParam(initialSearchParams, "builder") ?? "__all__",
       city: getParam(initialSearchParams, "city"),
       type: getParam(initialSearchParams, "type") as FormValues["type"],
       bedrooms: getParam(initialSearchParams, "bedrooms"),
       priceRange: getParam(initialSearchParams, "priceRange") as FormValues["priceRange"],
-    }),
-    [initialSearchParams]
+      };
+    },
+    [initialSearchParams, typeOptions, defaultMode]
   );
 
   const form = useForm<FormValues>({
@@ -194,6 +194,29 @@ function PropertyCatalog({
 
   const watchValues = form.watch();
   const watchMode = form.watch("mode");
+  const searchTrackRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (searchTrackRef.current) clearTimeout(searchTrackRef.current);
+    searchTrackRef.current = setTimeout(() => {
+      searchTrackRef.current = null;
+      const payload = {
+        city: watchValues.city,
+        mode: watchValues.mode,
+        type: watchValues.type,
+        bedrooms: watchValues.bedrooms,
+        priceRange: watchValues.priceRange,
+        tag: watchValues.tag,
+        builder: watchValues.builder,
+      };
+      trackEvent("search", "/imoveis", payload);
+      trackCrm("SEARCH", payload);
+    }, 800);
+    return () => {
+      if (searchTrackRef.current) clearTimeout(searchTrackRef.current);
+    };
+  }, [watchValues.city, watchValues.mode, watchValues.type, watchValues.bedrooms, watchValues.priceRange, watchValues.tag, watchValues.builder]);
+
   const builderOptions = useMemo(() => {
     const { city } = watchValues;
     const set = new Set<string>();
@@ -304,7 +327,7 @@ function PropertyCatalog({
                     <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
                       <ArrowLeftRight className="h-4 w-4 text-black/15" />
                       <Select
-                        value={field.value ?? "comprar"}
+                        value={field.value ?? defaultMode}
                         onValueChange={field.onChange}
                         className="w-full text-black/80 border-0 bg-transparent px-0"
                       >
@@ -312,8 +335,11 @@ function PropertyCatalog({
                           <SelectValue placeholder="Transação" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="comprar">Comprar</SelectItem>
-                          <SelectItem value="alugar">Alugar</SelectItem>
+                          {typeOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -511,6 +537,9 @@ function PropertyCatalog({
       </div>
 
       {/* Drawer anterior do mobile removido em favor do HomeFilter compartilhado */}
+
+      {/* Recomendações baseadas em eventos do visitante (busca e imóveis vistos) */}
+      <RecommendationsSection />
 
       {/* Seções vindas do backend (só aparecem as que você cadastrou) */}
       {displaySections.map(({ section, properties: sectionProps }) => (

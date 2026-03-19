@@ -1,5 +1,7 @@
 'use client';
 
+import { trackEvent as trackCrm, identifyLead } from '@/lib/tracking-crm';
+
 type TrackingEvent =
 	| 'lead_view'
 	| 'lead_submit'
@@ -52,6 +54,9 @@ export function trackLeadSubmit(context?: TrackingPayload): void {
 
 export function trackWhatsappClick(context?: TrackingPayload): void {
 	trackEvent('whatsapp_click', context);
+	trackCrm('CLICK_WHATSAPP', context ?? {});
+	// Cria/atualiza lead para este visitante (identificação mesmo sem formulário)
+	identifyLead();
 }
 
 export function trackImovelView(context?: TrackingPayload): void {

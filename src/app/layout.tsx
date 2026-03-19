@@ -6,6 +6,9 @@ import Script from "next/script";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import MuiThemeProvider from "@/components/providers/MuiThemeProvider";
+import { JsonLdRealEstateAgent } from "@/components/seo/JsonLdRealEstateAgent";
+import { CookieConsentBanner } from "@/components/CookieConsentBanner";
+import { AnalyticsSender } from "@/components/AnalyticsSender";
 import { getSiteConfig } from "@/services/properties";
 import { getSaxApiBase } from "@/lib/sax-api";
 
@@ -75,6 +78,7 @@ export default async function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
+        <JsonLdRealEstateAgent />
         {faviconSrc ? <link rel="icon" href={faviconSrc} /> : null}
         {/* Google Tag Manager */}
         {GTM_ID ? (
@@ -141,6 +145,8 @@ export default async function RootLayout({
             </noscript>
           ) : null}
         <MuiThemeProvider>
+          <CookieConsentBanner />
+          <AnalyticsSender />
           <Header logoSrc={logoSrc} />
           {/* Top mask to fade content under fixed header/menu */}
           {/* Solid cap under the fixed header (desktop/tablet only) */}

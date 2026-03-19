@@ -4,8 +4,24 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { getMapboxToken, siteMapStyle } from "@/lib/mapbox";
-import { getProperties, getCities } from "@/services/properties";
+import { getProperties, getCities, getSiteConfig, type TransactionTypeOption } from "@/services/properties";
 import type { Property, City } from "@/types/realEstate";
+
+const FALLBACK_TRANSACTION_TYPES: TransactionTypeOption[] = [
+  { value: "venda", label: "Venda" },
+  { value: "aluguel", label: "Aluguel" },
+  { value: "crowdfunding", label: "Crowdfunding" },
+];
+
+function propertyHasTransactionType(p: Property, modeValue: string): boolean {
+  const m = String(modeValue).toLowerCase().trim();
+  const types = Array.isArray(p.transactionTypes) ? p.transactionTypes : [];
+  if (types.some((t) => String(t).toLowerCase().trim() === m)) return true;
+  if (m === "venda" || m === "compra") return (typeof p.priceVenda === "number" && p.priceVenda > 0);
+  if (["aluguel", "locação", "locacao"].includes(m)) return (typeof p.priceAluguel === "number" && p.priceAluguel > 0);
+  if (m === "crowdfunding") return (typeof p.priceCrowdfunding === "number" && p.priceCrowdfunding > 0);
+  return false;
+}
 import {
   Form,
   FormControl,
@@ -29,7 +45,7 @@ import HomeFilter, { type FormValues as HomeFilterValues } from "@/sections/home
 
 const schema = z.object({
   city: z.string().optional(),
-  mode: z.enum(["comprar", "alugar"]).default("comprar"),
+  mode: z.string().default("venda"),
   type: z.enum(["casa", "apartamento", "terreno", "comercial"]).optional(),
   status: z.enum(["na-planta", "em-construcao", "pronto"]).optional(),
   bedrooms: z.string().optional(),
@@ -38,10 +54,13 @@ const schema = z.object({
 type FormValues = z.input<typeof schema>;
 
 export default function MapaPage() {
+  const [transactionTypes, setTransactionTypes] = useState<TransactionTypeOption[]>(FALLBACK_TRANSACTION_TYPES);
+  const defaultMode = transactionTypes[0]?.value ?? "venda";
+
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      mode: "comprar",
+      mode: defaultMode,
       city: undefined,
       type: undefined,
       status: undefined,
@@ -58,6 +77,11 @@ export default function MapaPage() {
   useEffect(() => {
     getProperties().then(setAllProperties);
     getCities().then(setCities);
+  }, []);
+  useEffect(() => {
+    getSiteConfig().then((c) => {
+      if (c.transactionTypes?.length) setTransactionTypes(c.transactionTypes);
+    });
   }, []);
 
   const cityOptions = useMemo(
@@ -202,6 +226,7 @@ export default function MapaPage() {
   const filtered = useMemo(() => {
     const { city, mode, bedrooms, type, builder } = watchValues;
     return (allProperties ?? []).filter((p) => {
+      if (mode && !propertyHasTransactionType(p, mode)) return false;
       if (city) {
         const c = `${p.address.city}-${p.address.state}`;
         if (c !== city) return false;
@@ -212,7 +237,6 @@ export default function MapaPage() {
         if (!Number.isNaN(min) && p.bedrooms < min) return false;
       }
       if (builder && p.builder !== builder) return false;
-      // mode is not yet split in mocks; accept all for now
       return (
         typeof p.address.lat === "number" && typeof p.address.lng === "number"
       );
@@ -335,15 +359,18 @@ export default function MapaPage() {
                   <FormItem className="w-[150px] shrink-0">
                     <FormControl>
                       <Select
-                        value={field.value ?? "comprar"}
+                        value={field.value ?? defaultMode}
                         onValueChange={field.onChange}
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Transação" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="comprar">Comprar</SelectItem>
-                          <SelectItem value="alugar">Alugar</SelectItem>
+                          {transactionTypes.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </FormControl>
@@ -486,7 +513,7 @@ export default function MapaPage() {
           onSearch={(values: HomeFilterValues) => {
             // Sincroniza filtros com o formulário da página para atualizar marcadores
             form.setValue("city", values.city ?? undefined);
-            form.setValue("mode", values.mode ?? "comprar");
+            form.setValue("mode", values.mode ?? defaultMode);
             form.setValue("type", values.type ?? undefined);
             form.setValue("bedrooms", values.bedrooms ?? undefined);
             form.setValue("builder", values.builder ?? undefined);
@@ -494,6 +521,7 @@ export default function MapaPage() {
             const map = mapRef.current;
             if (!map) return;
             const match = (allProperties ?? []).filter((p) => {
+              if (values.mode && !propertyHasTransactionType(p, values.mode)) return false;
               if (values.city) {
                 const c = `${p.address.city}-${p.address.state}`;
                 if (c !== values.city) return false;

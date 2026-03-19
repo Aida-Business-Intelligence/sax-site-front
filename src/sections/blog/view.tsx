@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
+import { MessageCircle, Eye, Heart, MoreHorizontal, Share2 } from "lucide-react";
 
 import type { BlogPost } from "@/types/blog";
 import {
@@ -105,7 +106,7 @@ export function PostListView() {
           Nenhum post encontrado.
         </p>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {visiblePosts.map((p) => (
             <PostCard key={p.id} post={p} />
           ))}
@@ -126,11 +127,20 @@ export function PostListView() {
   );
 }
 
+/** Formata número no estilo 1.95k, 9.91k */
+function formatStat(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(2).replace(/\.?0+$/, "")}k`;
+  return String(n);
+}
+
 function PostCard({ post }: { post: BlogPost }) {
   const [likes, setLikes] = React.useState(post.reactions.likes);
   const [optimistic, setOptimistic] = React.useState(false);
+  const [imgError, setImgError] = React.useState(false);
 
-  const handleLike = async () => {
+  const handleLike = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setOptimistic(true);
     setLikes((l) => l + 1);
     const next = await likePost(post.slug);
@@ -138,60 +148,109 @@ function PostCard({ post }: { post: BlogPost }) {
     if (typeof next === "number") setLikes(next);
   };
 
+  const showCover = post.coverUrl && !imgError;
+  const commentsCount = post.comments?.length ?? 0;
+  const authorInitial = (post.authorName || "A").charAt(0).toUpperCase();
+
   return (
-    <div className="group relative flex h-full flex-col overflow-hidden rounded-xl border">
-      {post.coverUrl ? (
-        <div
-          className="h-32 w-full bg-cover bg-center transition-transform group-hover:scale-[1.02]"
-          style={{ backgroundImage: `url(${post.coverUrl})` }}
-          aria-hidden="true"
-        />
-      ) : null}
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <div className="flex flex-wrap gap-1">
-          {post.tags.map((t) => (
-            <span
-              key={t}
-              className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] uppercase tracking-wide text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300"
-            >
-              {t}
+    <Link
+      href={`/blog/${post.slug}`}
+      className="group flex w-full overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-900"
+    >
+      {/* Coluna esquerda: conteúdo (~65%) */}
+      <div className="flex min-w-0 flex-1 flex-col justify-between p-6">
+        {/* Topo: badge + data */}
+        <div className="flex items-center justify-between gap-3">
+          {post.tags.length > 0 ? (
+            <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+              {post.tags[0].toUpperCase()}
             </span>
-          ))}
-        </div>
-        <Link
-          href={`/blog/${post.slug}`}
-          className="line-clamp-2 text-base font-semibold hover:underline"
-        >
-          {post.title}
-        </Link>
-        <p className="line-clamp-3 text-sm text-zinc-600 dark:text-zinc-300">
-          {post.excerpt}
-        </p>
-        <div className="mt-auto flex items-center justify-between pt-2 text-xs text-zinc-500">
-          <span>
+          ) : (
+            <span />
+          )}
+          <span className="shrink-0 text-xs text-slate-400 dark:text-slate-500">
             {new Date(post.createdAt).toLocaleDateString("pt-BR", {
               day: "2-digit",
               month: "short",
+              year: "numeric",
             })}
           </span>
-          <button
-            onClick={handleLike}
-            className="inline-flex items-center gap-1 rounded-md border px-2 py-1 hover:bg-zinc-50 dark:hover:bg-zinc-900"
-            title="Curtir"
-          >
-            <span>❤️</span>
-            <span>{likes}</span>
-            {optimistic ? <span className="ml-1 animate-pulse">...</span> : null}
-          </button>
+        </div>
+
+        {/* Título + excerpt */}
+        <div className="min-w-0 flex-1 py-2">
+          <h2 className="line-clamp-2 text-lg font-semibold leading-tight text-slate-800 dark:text-slate-100">
+            {post.title}
+          </h2>
+          <p className="mt-1 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">
+            {post.excerpt || "Sem resumo."}
+          </p>
+        </div>
+
+        {/* Rodapé: opções + estatísticas */}
+        <div className="flex items-center justify-between gap-4 pt-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+            <MoreHorizontal className="h-5 w-5" aria-hidden />
+          </span>
+          <div className="flex items-center gap-4 text-xs text-slate-400 dark:text-slate-500">
+            <span className="inline-flex items-center gap-1.5">
+              <MessageCircle className="h-4 w-4" />
+              {formatStat(commentsCount)}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Eye className="h-4 w-4" />
+              {formatStat(0)}
+            </span>
+            <button
+              type="button"
+              onClick={handleLike}
+              className="inline-flex items-center gap-1.5 hover:text-slate-600 dark:hover:text-slate-300"
+              title="Curtir"
+            >
+              <Heart className="h-4 w-4" />
+              {formatStat(optimistic ? likes + 1 : likes)}
+              {optimistic ? <span className="animate-pulse">...</span> : null}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Coluna direita: imagem da capa (~35%) + avatar */}
+      <div className="relative w-[35%] min-w-[200px] shrink-0 overflow-hidden rounded-r-[1.5rem] bg-slate-100 dark:bg-slate-800">
+        {showCover ? (
+          <img
+            src={post.coverUrl}
+            alt=""
+            className="h-full min-h-[180px] w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div className="flex h-full min-h-[180px] w-full items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600">
+            <span className="text-4xl text-white/40 dark:text-slate-500/50">📄</span>
+          </div>
+        )}
+        {/* Avatar no canto superior direito da imagem */}
+        <div
+          className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-slate-700 text-sm font-medium text-white shadow dark:border-slate-800"
+          aria-hidden
+        >
+          {authorInitial}
+        </div>
+      </div>
+    </Link>
   );
+}
+
+/** Detecta se o conteúdo parece HTML (ex.: do editor rico do PDV). */
+function looksLikeHtml(raw: string): boolean {
+  const t = raw.trim();
+  return t.startsWith("<") || /<\/(p|div|br|span|strong|em|ul|ol|li|h[1-6])>/i.test(t);
 }
 
 export function PostDetailsView({ slug }: { slug: string }) {
   const [post, setPost] = React.useState<BlogPost | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [coverError, setCoverError] = React.useState(false);
 
   React.useEffect(() => {
     let mounted = true;
@@ -208,51 +267,89 @@ export function PostDetailsView({ slug }: { slug: string }) {
   }, [slug]);
 
   if (loading) {
-    return <p className="text-zinc-700 dark:text-zinc-300">Carregando...</p>;
+    return (
+      <div className="flex min-h-[200px] items-center justify-center">
+        <p className="text-zinc-500 dark:text-zinc-400">Carregando...</p>
+      </div>
+    );
   }
   if (!post) {
-    return <p className="text-zinc-700 dark:text-zinc-300">Post não encontrado.</p>;
+    return (
+      <div className="rounded-xl border border-zinc-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-900">
+        <p className="text-zinc-600 dark:text-zinc-400">Post não encontrado.</p>
+      </div>
+    );
   }
 
+  const showCover = post.coverUrl && !coverError;
+  const isHtml = looksLikeHtml(post.content);
+
   return (
-    <article className="w-full max-w-3xl">
-      {post.coverUrl ? (
-        <div
-          className="mb-6 h-56 w-full rounded-xl bg-cover bg-center"
-          style={{ backgroundImage: `url(${post.coverUrl})` }}
-          aria-hidden="true"
-        />
-      ) : null}
+    <article className="mx-auto w-full max-w-3xl">
+      {/* Card container: fundo branco, borda leve, sombra */}
+      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        {/* Imagem de capa em destaque */}
+        {showCover ? (
+          <div className="relative aspect-[21/9] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+            <img
+              src={post.coverUrl}
+              alt=""
+              className="h-full w-full object-cover"
+              onError={() => setCoverError(true)}
+            />
+          </div>
+        ) : (
+          <div className="relative aspect-[21/9] w-full bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-700" />
+        )}
 
-      <div className="mb-3 flex flex-wrap gap-2">
-        {post.tags.map((t) => (
-          <span
-            key={t}
-            className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] uppercase tracking-wide text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300"
-          >
-            {t}
-          </span>
-        ))}
+        <div className="px-6 py-6 sm:px-8 sm:py-8">
+          {/* Tags */}
+          {post.tags.length > 0 && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {post.tags.map((t) => (
+                <span
+                  key={t}
+                  className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium uppercase tracking-wide text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-3xl">
+            {post.title}
+          </h1>
+          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+            Por {post.authorName} •{" "}
+            {new Date(post.createdAt).toLocaleDateString("pt-BR", {
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            })}
+          </p>
+
+          <ReactionBar slug={post.slug} likes={post.reactions.likes} />
+
+          {/* Corpo: HTML (do PDV) ou Markdown */}
+          <div className="mt-8 border-t border-zinc-100 pt-8 dark:border-zinc-800">
+            {isHtml ? (
+              <div
+                className="prose prose-zinc max-w-none dark:prose-invert prose-p:leading-relaxed prose-p:text-zinc-700 dark:prose-p:text-zinc-300 prose-headings:font-semibold"
+                dangerouslySetInnerHTML={{ __html: post.content }}
+              />
+            ) : (
+              <div className="prose prose-zinc max-w-none dark:prose-invert">
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+                  {post.content}
+                </ReactMarkdown>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      <h1 className="mb-2 text-3xl font-semibold tracking-tight">{post.title}</h1>
-      <p className="mb-6 text-sm text-zinc-500">
-        Por {post.authorName} •{" "}
-        {new Date(post.createdAt).toLocaleDateString("pt-BR", {
-          day: "2-digit",
-          month: "long",
-          year: "numeric",
-        })}
-      </p>
-
-      <ReactionBar slug={post.slug} likes={post.reactions.likes} />
-
-      <div className="prose prose-zinc mt-6 max-w-none dark:prose-invert">
-        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
-          {post.content}
-        </ReactMarkdown>
-      </div>
-
+      {/* Comentários fora do card, mesmo container */}
       <div className="mt-10">
         <Comments slug={post.slug} comments={post.comments} />
       </div>
@@ -287,20 +384,22 @@ function ReactionBar({ slug, likes }: { slug: string; likes: number }) {
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="mt-4 flex items-center gap-3">
       <button
+        type="button"
         onClick={onLike}
-        className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900"
+        className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
       >
-        <span>❤️</span>
-        <span>{count}</span>
-        {optimistic ? <span className="ml-1 animate-pulse">...</span> : null}
+        <Heart className="h-4 w-4" />
+        <span>{optimistic ? count + 1 : count}</span>
+        {optimistic ? <span className="animate-pulse">...</span> : null}
       </button>
       <button
+        type="button"
         onClick={onShare}
-        className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900"
+        className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
       >
-        <span>🔗</span>
+        <Share2 className="h-4 w-4" />
         <span>Compartilhar</span>
       </button>
     </div>
@@ -338,44 +437,52 @@ function Comments({
   };
 
   return (
-    <div>
-      <h2 className="mb-3 text-lg font-semibold">Comentários ({items.length})</h2>
-      <ul className="space-y-3">
+    <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-8">
+      <h2 className="mb-4 text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+        Comentários ({items.length})
+      </h2>
+      <ul className="space-y-4">
         {items.map((c) => (
-          <li key={c.id} className="rounded-md border p-3">
-            <div className="mb-1 text-xs text-zinc-500">
+          <li
+            key={c.id}
+            className="rounded-xl border border-zinc-100 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-800/30"
+          >
+            <div className="mb-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">
               {c.authorName} •{" "}
               {new Date(c.createdAt).toLocaleDateString("pt-BR", {
                 day: "2-digit",
                 month: "short",
+                year: "numeric",
               })}
             </div>
-            <p className="text-sm">{c.message}</p>
+            <p className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">{c.message}</p>
           </li>
         ))}
       </ul>
 
-      <form onSubmit={onSubmit} className="mt-4 space-y-2">
-        <div className="flex gap-2">
+      <form onSubmit={onSubmit} className="mt-6 space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <input
             value={authorName}
             onChange={(e) => setAuthorName(e.target.value)}
             placeholder="Seu nome (opcional)"
-            className="w-48 rounded-md border px-3 py-2 text-sm outline-none focus:ring"
+            className="rounded-lg border border-zinc-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:focus:ring-zinc-500"
           />
-          <input
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Escreva um comentário..."
-            className="flex-1 rounded-md border px-3 py-2 text-sm outline-none focus:ring"
-          />
-          <button
-            type="submit"
-            disabled={submitting || !message.trim()}
-            className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50 dark:bg-white dark:text-black"
-          >
-            Publicar
-          </button>
+          <div className="flex flex-1 flex-col gap-2 sm:flex-row">
+            <input
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Escreva um comentário..."
+              className="min-w-0 flex-1 rounded-lg border border-zinc-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:focus:ring-zinc-500"
+            />
+            <button
+              type="submit"
+              disabled={submitting || !message.trim()}
+              className="rounded-lg bg-zinc-800 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-200 dark:text-zinc-900 dark:hover:bg-zinc-100"
+            >
+              {submitting ? "Enviando…" : "Publicar"}
+            </button>
+          </div>
         </div>
       </form>
     </div>

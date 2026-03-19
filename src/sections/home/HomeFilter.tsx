@@ -16,11 +16,17 @@ import {
 } from "@/components/ui/select";
 import type { Property } from "@/types/realEstate";
 import { MapPin, ArrowLeftRight, Home, Tag, Bed } from "lucide-react";
-import { getProperties } from "@/services/properties";
+import { getProperties, getSiteConfig, type TransactionTypeOption } from "@/services/properties";
+
+const FALLBACK_TRANSACTION_TYPES: TransactionTypeOption[] = [
+  { value: "venda", label: "Venda" },
+  { value: "aluguel", label: "Aluguel" },
+  { value: "crowdfunding", label: "Crowdfunding" },
+];
 
 const schema = z.object({
   city: z.string().optional(),
-  mode: z.enum(["comprar", "alugar"]).default("comprar"),
+  mode: z.string().default("venda"),
   type: z.enum(["casa", "apartamento", "terreno", "comercial"]).optional(),
   bedrooms: z.string().optional(),
   priceRange: z
@@ -63,8 +69,14 @@ export default function HomeFilter({
   onSearch: onSearchOverride,
 }: HomeFilterProps) {
   const [properties, setProperties] = useState<Property[]>([]);
+  const [transactionTypes, setTransactionTypes] = useState<TransactionTypeOption[]>(FALLBACK_TRANSACTION_TYPES);
   useEffect(() => {
     getProperties().then(setProperties);
+  }, []);
+  useEffect(() => {
+    getSiteConfig().then((c) => {
+      if (c.transactionTypes?.length) setTransactionTypes(c.transactionTypes);
+    });
   }, []);
   const router = useRouter();
   const tagsMenuRef = useRef<HTMLDivElement | null>(null);
@@ -96,10 +108,11 @@ export default function HomeFilter({
     };
   }, []);
 
+  const defaultMode = transactionTypes[0]?.value ?? "venda";
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      mode: "comprar",
+      mode: defaultMode,
       priceRange: "__all__",
       status: "__all__",
     },
@@ -164,8 +177,9 @@ export default function HomeFilter({
   }, [form, cities]);
   const modeLabel = useMemo(() => {
     const v = form.watch("mode");
-    return v === "alugar" ? "Alugar" : "Comprar";
-  }, [form]);
+    const opt = transactionTypes.find((t) => t.value === v);
+    return opt?.label ?? "Transação";
+  }, [form, transactionTypes]);
   const builderLabel = useMemo(() => {
     const v = form.watch("builder");
     return v ? (v.length > 16 ? v.slice(0, 16) + "…" : v) : "Construtora";
@@ -316,7 +330,7 @@ export default function HomeFilter({
                     <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
                       <ArrowLeftRight className="h-4 w-4 text-black/15" />
                       <Select
-                        value={field.value ?? "comprar"}
+                        value={field.value ?? defaultMode}
                         onValueChange={field.onChange}
                         className="w-full text-black/80 border-0 bg-transparent px-0"
                       >
@@ -324,8 +338,11 @@ export default function HomeFilter({
                           <SelectValue placeholder="Transação" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="comprar">Comprar</SelectItem>
-                          <SelectItem value="alugar">Alugar</SelectItem>
+                          {transactionTypes.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -655,7 +672,7 @@ export default function HomeFilter({
                     type="button"
                     onClick={() =>
                       form.reset({
-                        mode: "comprar",
+                        mode: defaultMode,
                         priceRange: "__all__",
                         status: "__all__",
                       })
@@ -782,7 +799,7 @@ export default function HomeFilter({
                             <div className="flex h-11 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
                               <ArrowLeftRight className="h-4 w-4 text-white/70" />
                               <Select
-                                value={field.value ?? "comprar"}
+                                value={field.value ?? defaultMode}
                                 onValueChange={field.onChange}
                                 className="w-full text-white border-0 bg-transparent px-0"
                                 placeholderClassName="text-white/70"
@@ -794,10 +811,11 @@ export default function HomeFilter({
                                   <SelectValue placeholder="Transação" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="comprar">
-                                    Comprar
-                                  </SelectItem>
-                                  <SelectItem value="alugar">Alugar</SelectItem>
+                                  {transactionTypes.map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value}>
+                                      {opt.label}
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>

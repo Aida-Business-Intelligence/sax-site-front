@@ -96,7 +96,15 @@ export async function fetchWarehouses(): Promise<WarehouseDto[]> {
 
 export type PartnerLogoItem = { url: string; name?: string };
 
-/** Configuração do site (banners, logo, favicon, menu, hero, parceiros, footer). */
+export type TransactionTypeOption = { value: string; label: string };
+
+const DEFAULT_TRANSACTION_TYPES: TransactionTypeOption[] = [
+  { value: "venda", label: "Venda" },
+  { value: "aluguel", label: "Aluguel" },
+  { value: "crowdfunding", label: "Crowdfunding" },
+];
+
+/** Configuração do site (banners, logo, favicon, menu, hero, parceiros, footer, tipos de transação). */
 export async function fetchSiteConfig(): Promise<{
   featuredPropertyIds: string[];
   logoUrl: string | null;
@@ -106,17 +114,32 @@ export async function fetchSiteConfig(): Promise<{
   partnerLogos: PartnerLogoItem[];
   aboutContent: Record<string, unknown> | null;
   footerContent: Record<string, unknown> | null;
+  transactionTypes: TransactionTypeOption[];
 }> {
   const base = getSaxApiBase();
-  if (!base) return { featuredPropertyIds: [], logoUrl: null, faviconUrl: null, menuItems: null, heroContent: null, partnerLogos: [], aboutContent: null, footerContent: null };
+  const empty = {
+    featuredPropertyIds: [] as string[],
+    logoUrl: null as string | null,
+    faviconUrl: null as string | null,
+    menuItems: null as string | null,
+    heroContent: null as Record<string, unknown> | null,
+    partnerLogos: [] as PartnerLogoItem[],
+    aboutContent: null as Record<string, unknown> | null,
+    footerContent: null as Record<string, unknown> | null,
+    transactionTypes: DEFAULT_TRANSACTION_TYPES,
+  };
+  if (!base) return empty;
   try {
     const res = await fetch(`${base}/api/site-config`, { cache: "no-store" });
-    if (!res.ok) return { featuredPropertyIds: [], logoUrl: null, faviconUrl: null, menuItems: null, heroContent: null, partnerLogos: [], aboutContent: null, footerContent: null };
+    if (!res.ok) return empty;
     const data = await res.json();
     const ids = Array.isArray(data?.featuredPropertyIds) ? data.featuredPropertyIds : [];
     const partnerLogos = Array.isArray(data?.partnerLogos)
       ? data.partnerLogos.filter((p: unknown) => p && typeof p === "object" && typeof (p as PartnerLogoItem).url === "string")
       : [];
+    const transactionTypes = Array.isArray(data?.transactionTypes) && data.transactionTypes.length > 0
+      ? data.transactionTypes.filter((t: unknown) => t && typeof t === "object" && typeof (t as TransactionTypeOption).value === "string")
+      : DEFAULT_TRANSACTION_TYPES;
     return {
       featuredPropertyIds: ids,
       logoUrl: data?.logoUrl ?? null,
@@ -126,9 +149,10 @@ export async function fetchSiteConfig(): Promise<{
       partnerLogos,
       aboutContent: data?.aboutContent ?? null,
       footerContent: data?.footerContent ?? null,
+      transactionTypes,
     };
   } catch {
-    return { featuredPropertyIds: [], logoUrl: null, faviconUrl: null, menuItems: null, heroContent: null, partnerLogos: [], aboutContent: null, footerContent: null };
+    return empty;
   }
 }
 
@@ -166,5 +190,25 @@ export async function fetchPropertyBySlug(slug: string): Promise<unknown | null>
     return data ?? null;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Busca imóveis recomendados para o visitante (por fingerprint).
+ * Retorna array no mesmo formato de fetchProperties (para mapApiPropertyToProperty).
+ */
+export async function fetchRecommendations(fingerprint: string): Promise<unknown[]> {
+  const base = getSaxApiBase();
+  if (!base || !fingerprint) return [];
+  try {
+    const res = await fetch(
+      `${base}/api/tracking/recommendations?fingerprint=${encodeURIComponent(fingerprint)}`,
+      { cache: "no-store" }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
   }
 }

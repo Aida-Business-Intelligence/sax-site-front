@@ -558,6 +558,14 @@ export async function getSectionsWithProperties(): Promise<
   }
 }
 
+export type TransactionTypeOption = { value: string; label: string };
+
+const DEFAULT_TRANSACTION_TYPES: TransactionTypeOption[] = [
+  { value: "venda", label: "Venda" },
+  { value: "aluguel", label: "Aluguel" },
+  { value: "crowdfunding", label: "Crowdfunding" },
+];
+
 export async function getSiteConfig(): Promise<{
   featuredPropertyIds: string[];
   logoUrl: string | null;
@@ -567,15 +575,27 @@ export async function getSiteConfig(): Promise<{
   partnerLogos: { url: string; name?: string }[];
   aboutContent: Record<string, unknown> | null;
   footerContent: Record<string, unknown> | null;
+  transactionTypes: TransactionTypeOption[];
 }> {
+  const fallback = {
+    featuredPropertyIds: [] as string[],
+    logoUrl: null as string | null,
+    faviconUrl: null as string | null,
+    menuItems: null as string | null,
+    heroContent: null as Record<string, unknown> | null,
+    partnerLogos: [] as { url: string; name?: string }[],
+    aboutContent: null as Record<string, unknown> | null,
+    footerContent: null as Record<string, unknown> | null,
+    transactionTypes: DEFAULT_TRANSACTION_TYPES,
+  };
   if (hasSaxApi()) {
     try {
       return await fetchSiteConfigApi();
     } catch {
-      return { featuredPropertyIds: [], logoUrl: null, faviconUrl: null, menuItems: null, heroContent: null, partnerLogos: [], aboutContent: null, footerContent: null };
+      return fallback;
     }
   }
-  return { featuredPropertyIds: [], logoUrl: null, faviconUrl: null, menuItems: null, heroContent: null, partnerLogos: [], aboutContent: null, footerContent: null };
+  return fallback;
 }
 
 export async function getProperties(): Promise<Property[]> {

@@ -6,6 +6,8 @@ type SeoParams = {
   description?: string;
   canonical?: string;
   image?: string;
+  /** Palavras-chave para SEO (cidade, tipo de imóvel, etc.) */
+  keywords?: string[];
 };
 
 export function buildMetadata({
@@ -13,6 +15,7 @@ export function buildMetadata({
   description,
   canonical,
   image,
+  keywords,
 }: SeoParams = {}): Metadata {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? siteConfig.url;
   const finalTitle = title ? `${title} | ${siteConfig.name}` : siteConfig.name;
@@ -26,6 +29,7 @@ export function buildMetadata({
   return {
     title: finalTitle,
     description: finalDescription,
+    ...(keywords?.length ? { keywords: keywords.join(", ") } : {}),
     alternates: {
       canonical: fullCanonical,
     },

@@ -1,5 +1,6 @@
 import { getProperties, getSectionsWithProperties, getTags, getSiteConfig } from "@/services/properties";
 import { buildMetadata } from "@/lib/seo";
+import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
 import { PropertyCatalog } from "@/sections/imoveis/PropertyCatalog";
 
 export const revalidate = 0; // sempre dados frescos (atualiza no PDV = aparece ao recarregar)
@@ -9,6 +10,7 @@ export const metadata = buildMetadata({
   canonical: "/imoveis",
   description:
     "Explore nossa seleção de imóveis premium à venda nas melhores regiões do Brasil.",
+  keywords: ["imóveis à venda", "imobiliária", "apartamento", "casa", "lançamentos"],
 });
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -35,6 +37,7 @@ export default async function ImoveisPage({
       />
 
       <div className="mx-auto max-w-7xl px-4 pt-8 pb-10 sm:px-6 md:pt-10">
+        <Breadcrumbs items={[{ label: "Início", href: "/" }, { label: "Imóveis", href: "/imoveis" }]} />
         <PropertyCatalog
           properties={properties}
           sectionsWithProperties={sectionsWithProperties}
@@ -42,6 +45,7 @@ export default async function ImoveisPage({
           initialSearchParams={params}
           featuredPropertyIds={siteConfig?.featuredPropertyIds ?? []}
           partnerLogos={siteConfig?.partnerLogos ?? []}
+          transactionTypes={siteConfig?.transactionTypes ?? []}
         />
       </div>
     </div>

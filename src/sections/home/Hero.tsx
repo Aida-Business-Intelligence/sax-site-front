@@ -6,6 +6,7 @@ import Map from "@/components/map/Map";
 import { siteMapStyle } from "@/lib/mapbox";
 import { getProperties } from "@/services/properties";
 import HomeFilter from "@/sections/home/HomeFilter";
+import { trackWhatsappClick } from "@/lib/tracking";
 
 const DEFAULT_HERO = {
   title: "Imóveis selecionados para um estilo de vida premium",
@@ -137,9 +138,10 @@ export default function Hero({ heroContent = null }: HeroProps) {
           >
             <a
               href={buttonHref}
-              target={hero.buttonLinkType === "url" ? "_blank" : "_blank"}
+              target="_blank"
               rel="noopener noreferrer"
               className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+              onClick={() => hero.buttonLinkType === "whatsapp" && trackWhatsappClick({ source: "hero" })}
             >
               {hero.buttonText}
             </a>

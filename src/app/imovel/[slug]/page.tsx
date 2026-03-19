@@ -1,9 +1,13 @@
 import { buildMetadata } from "@/lib/seo";
 import { getPropertyBySlug } from "@/services/properties";
+import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
+import { JsonLdProperty } from "@/components/seo/JsonLdProperty";
+import { PropertyViewAnalytics } from "@/components/PropertyViewAnalytics";
 import Image from "next/image";
 import Link from "next/link";
 import Map from "@/components/map/Map";
 import { trackImovelView } from "@/lib/tracking";
+import { trackEvent as trackCrm } from "@/lib/tracking-crm";
 import {
   ArrowLeft,
   Bath,
@@ -38,18 +42,27 @@ export async function generateMetadata({ params }: Props) {
     typeof property.coverImage?.url === "string" && property.coverImage.url.trim() !== ""
       ? property.coverImage.url
       : undefined;
+  const keywords: string[] = [
+    property.title,
+    property.address.city,
+    property.address.neighborhood,
+    property.type,
+  ].filter(Boolean) as string[];
+  if (property.address.state) keywords.push(`imóveis ${property.address.state}`);
+
   return buildMetadata({
     title: property.title,
     description: property.description,
     canonical: `/imovel/${property.slug}`,
     ...(imageUrl && { image: imageUrl }),
+    keywords,
   });
 }
 
 function ImovelViewTracker({ slug }: { slug: string }) {
-  // client-only tracker
   if (typeof window !== "undefined") {
     trackImovelView({ slug });
+    trackCrm("VIEW_PROPERTY", { slug });
   }
   return null;
 }
@@ -75,8 +88,16 @@ export default async function ImovelPage({ params }: Props) {
     );
   }
 
+  const breadcrumbs = [
+    { label: "Imóveis", href: "/imoveis" },
+    { label: property.title, href: `/imovel/${property.slug}` },
+  ];
+
   return (
     <div className="mx-auto max-w-7xl px-4 pt-20 pb-14 sm:px-6">
+      <JsonLdProperty property={property} />
+      <PropertyViewAnalytics propertySlug={property.slug} />
+      <Breadcrumbs items={breadcrumbs} />
       <ImovelViewTracker slug={property.slug} />
       <Link
         href="/imoveis"

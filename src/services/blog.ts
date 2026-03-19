@@ -2,8 +2,29 @@
 
 import { initialBlogPosts } from "@/_mock/blog";
 import type { BlogPost, BlogPostInput, BlogComment } from "@/types/blog";
+import { getSaxApiBase, hasSaxApi } from "@/lib/sax-api";
 
 const STORAGE_KEY = "blog.posts.v1";
+
+/** Converte post da API sax-backend para BlogPost do site. */
+function mapApiPostToBlogPost(raw: Record<string, unknown>): BlogPost {
+  const reactions = (raw.reactions as { likes?: number }) ?? {};
+  const comments = (Array.isArray(raw.comments) ? raw.comments : []) as BlogComment[];
+  return {
+    id: String(raw.id ?? ''),
+    slug: String(raw.slug ?? ''),
+    title: String(raw.title ?? ''),
+    excerpt: String(raw.excerpt ?? ''),
+    content: String(raw.content ?? ''),
+    coverUrl: raw.coverUrl != null ? String(raw.coverUrl) : undefined,
+    tags: Array.isArray(raw.tags) ? raw.tags.map(String) : [],
+    authorName: String(raw.authorName ?? ''),
+    createdAt: String(raw.createdAt ?? ''),
+    updatedAt: String(raw.updatedAt ?? ''),
+    reactions: { likes: Number(reactions.likes) || 0 },
+    comments,
+  };
+}
 
 function slugify(input?: string | null): string {
   const str = (input ?? "").toString();
@@ -54,6 +75,21 @@ function writeStore(posts: BlogPost[]) {
 }
 
 export async function listPosts(): Promise<BlogPost[]> {
+  if (hasSaxApi()) {
+    try {
+      const base = getSaxApiBase();
+      const res = await fetch(`${base}/api/blog`, { cache: "no-store" });
+      if (!res.ok) return [];
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : data?.posts ?? [];
+      const posts = list.map((p: Record<string, unknown>) => mapApiPostToBlogPost(p));
+      return posts.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    } catch {
+      return [];
+    }
+  }
   const posts = readStore().sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
@@ -61,18 +97,29 @@ export async function listPosts(): Promise<BlogPost[]> {
 }
 
 export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
+  if (hasSaxApi()) {
+    try {
+      const base = getSaxApiBase();
+      const res = await fetch(
+        `${base}/api/blog/by-slug/${encodeURIComponent(slug)}`,
+        { cache: "no-store" }
+      );
+      if (!res.ok) return null;
+      const raw = await res.json();
+      return mapApiPostToBlogPost(raw as Record<string, unknown>);
+    } catch {
+      return null;
+    }
+  }
   let posts = readStore();
-  // direct match
   let found = posts.find((p) => p.slug === slug) ?? null;
   if (found) return found;
-  // tolerant match: normalize incoming and compare with post.slug and post.title slugified
   const normalized = slugify(slug);
   found =
     posts.find(
       (p) => p.slug === normalized || slugify(p.title) === normalized
     ) ?? null;
   if (found) return found;
-  // last resort: reseed and retry
   posts = seedAndReturn();
   return (
     posts.find(
@@ -84,13 +131,13 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
 export async function searchPosts(query: string): Promise<BlogPost[]> {
   const q = query.trim().toLowerCase();
   if (!q) return listPosts();
-  const posts = readStore();
+  const posts = await listPosts();
   return posts.filter((p) => {
     return (
       p.title.toLowerCase().includes(q) ||
       p.excerpt.toLowerCase().includes(q) ||
       p.content.toLowerCase().includes(q) ||
-      p.tags.some((t) => t.toLowerCase().includes(q))
+      (Array.isArray(p.tags) && p.tags.some((t) => String(t).toLowerCase().includes(q)))
     );
   });
 }
