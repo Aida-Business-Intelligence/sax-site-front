@@ -31,7 +31,7 @@ type HeroContent = {
   showMap?: boolean;
 };
 
-function normalizeHero(raw: HeroContent | null | undefined): typeof DEFAULT_HERO {
+function normalizeHero(raw: HeroContent | null | undefined): Required<HeroContent> {
   if (!raw || typeof raw !== "object") return { ...DEFAULT_HERO };
   return {
     title: typeof raw.title === "string" ? raw.title : DEFAULT_HERO.title,
