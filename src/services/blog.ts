@@ -82,7 +82,7 @@ export async function listPosts(): Promise<BlogPost[]> {
       if (!res.ok) return [];
       const data = await res.json();
       const list = Array.isArray(data) ? data : data?.posts ?? [];
-      const posts = list.map((p: Record<string, unknown>) => mapApiPostToBlogPost(p));
+      const posts: BlogPost[] = list.map((p: Record<string, unknown>) => mapApiPostToBlogPost(p));
       return posts.sort(
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
