@@ -14,6 +14,8 @@ type Props = {
   bearing?: number;
   markers?: Marker[];
   show3DBuildings?: boolean;
+  /** Vista inclinada + prédios 3D + controles de rotação/inclinação (ideal para ficha do imóvel) */
+  view3D?: boolean;
   styleUrl?: string;
   markerStyle?: "default" | "teal-glow" | "neon-blue";
   projectionGlobe?: boolean;
@@ -22,6 +24,8 @@ type Props = {
   showControls?: boolean;
   autoRotate?: boolean;
   autoRotateSpeedDegPerSec?: number; // positive rotates eastward
+  /** Esconde rótulos do estilo Mapbox (cidades/países); mantém só os markers do app */
+  hideBasemapLabels?: boolean;
   className?: string;
 };
 
@@ -32,6 +36,7 @@ export default function Map({
   bearing = 0,
   markers = [],
   show3DBuildings = false,
+  view3D = false,
   styleUrl = "mapbox://styles/mapbox/dark-v11",
   markerStyle = "default",
   projectionGlobe = false,
@@ -40,8 +45,12 @@ export default function Map({
   showControls = true,
   autoRotate = false,
   autoRotateSpeedDegPerSec = 0.6,
+  hideBasemapLabels = false,
   className,
 }: Props) {
+  const effectivePitch = view3D ? 52 : pitch;
+  const effectiveBearing = view3D ? -22 : bearing;
+  const effectiveShow3DBuildings = view3D || show3DBuildings;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markerObjs = useRef<mapboxgl.Marker[]>([]);
@@ -61,11 +70,12 @@ export default function Map({
       style: styleUrl,
       center: [center.lng, center.lat],
       zoom,
-      pitch,
-      bearing,
+      pitch: effectivePitch,
+      bearing: effectiveBearing,
       antialias: true,
       minZoom,
       maxZoom,
+      maxPitch: view3D ? 85 : undefined,
       attributionControl: false,
     });
     // Ensure first render paints even if container sizes after mount
@@ -84,7 +94,10 @@ export default function Map({
     });
     if (showControls) {
       map.addControl(
-        new mapboxgl.NavigationControl({ showCompass: false }),
+        new mapboxgl.NavigationControl({
+          showCompass: view3D,
+          visualizePitch: view3D,
+        }),
         "top-right"
       );
     }
@@ -103,7 +116,7 @@ export default function Map({
           "star-intensity": 0,
         });
       }
-      if (show3DBuildings) {
+      if (effectiveShow3DBuildings) {
         const layers = map.getStyle().layers ?? [];
         const labelLayerId = layers.find(
           (l) => l.type === "symbol" && (l.layout as any)?.["text-field"]
@@ -180,7 +193,20 @@ export default function Map({
         rotateRaf.current = null;
       }
     };
-  }, [token, styleUrl, center.lng, center.lat, zoom, pitch, bearing, show3DBuildings, projectionGlobe, minZoom, maxZoom]);
+  }, [
+    token,
+    styleUrl,
+    center.lng,
+    center.lat,
+    zoom,
+    effectivePitch,
+    effectiveBearing,
+    effectiveShow3DBuildings,
+    view3D,
+    projectionGlobe,
+    minZoom,
+    maxZoom,
+  ]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -193,19 +219,26 @@ export default function Map({
     if (!markers.length) return;
     markers.forEach((m) => {
       const el = document.createElement("div");
-      el.style.width = "10px";
-      el.style.height = "10px";
       el.style.borderRadius = "9999px";
       if (markerStyle === "teal-glow") {
+        el.style.width = "10px";
+        el.style.height = "10px";
         el.style.background = "#14b8a6";
         el.style.boxShadow = "0 0 0 6px rgba(20,184,166,.2)";
       } else if ((markerStyle as string) === "neon-blue") {
-        el.style.background = "#00D8FF"; // neon blue core
-        el.style.border = "2px solid rgba(255,255,255,0.95)"; // white contour
+        // Azul ciano fluorescente (legível no mapa dark-v11)
+        const size = "14px";
+        el.style.width = size;
+        el.style.height = size;
+        el.style.background =
+          "radial-gradient(circle at 35% 30%, #ffffff 0%, #67e8f9 28%, #06b6d4 55%, #0891b2 100%)";
+        el.style.border = "2px solid rgba(255,255,255,0.92)";
         el.style.boxSizing = "border-box";
         el.style.boxShadow =
-          "0 0 8px rgba(0,216,255,.9), 0 0 14px rgba(0,216,255,.55), 0 0 22px rgba(0,216,255,.35)";
+          "0 0 10px rgba(34,211,238,1), 0 0 20px rgba(6,182,212,0.75), 0 0 32px rgba(8,145,178,0.45), inset 0 0 6px rgba(255,255,255,0.35)";
       } else {
+        el.style.width = "10px";
+        el.style.height = "10px";
         el.style.background = "#111827";
       }
       const marker = new mapboxgl.Marker({ element: el })
@@ -214,6 +247,33 @@ export default function Map({
       markerObjs.current.push(marker);
     });
   }, [markers, markerStyle, mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady || !hideBasemapLabels) return;
+
+    const hideLabels = () => {
+      try {
+        const layers = map.getStyle()?.layers ?? [];
+        for (const layer of layers) {
+          if (layer.type !== "symbol") continue;
+          const layout = layer.layout as Record<string, unknown> | undefined;
+          const tf = layout?.["text-field"];
+          if (tf == null || tf === "") continue;
+          if (!map.getLayer(layer.id)) continue;
+          map.setLayoutProperty(layer.id, "visibility", "none");
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+
+    hideLabels();
+    map.on("style.load", hideLabels);
+    return () => {
+      map.off("style.load", hideLabels);
+    };
+  }, [mapReady, hideBasemapLabels]);
 
   // Soft auto-rotation around the globe (changes longitude), pauses on user interaction
   useEffect(() => {

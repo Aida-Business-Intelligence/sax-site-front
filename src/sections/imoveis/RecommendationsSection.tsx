@@ -7,8 +7,16 @@ import { fetchRecommendations } from "@/lib/sax-api";
 import { mapApiPropertyToProperty } from "@/services/properties";
 import type { Property } from "@/types/realEstate";
 import PropertyCard from "@/components/cards/PropertyCard";
+import { cn } from "@/lib/utils";
 
-export default function RecommendationsSection() {
+type Props = {
+  /** Quando false, reduz margem inferior (sem bloco de parceiros abaixo). */
+  hasPartnersBelow?: boolean;
+};
+
+export default function RecommendationsSection({
+  hasPartnersBelow = true,
+}: Props) {
   const [properties, setProperties] = useState<Property[]>([]);
 
   useEffect(() => {
@@ -27,7 +35,12 @@ export default function RecommendationsSection() {
   if (properties.length === 0) return null;
 
   return (
-    <section className="mb-12">
+    <section
+      className={cn(
+        hasPartnersBelow ? "pt-10 md:pt-14" : "pt-4 md:pt-6",
+        hasPartnersBelow ? "mb-12" : "mb-4 md:mb-6"
+      )}
+    >
       <div className="mb-4 flex items-end justify-between">
         <h2 className="text-xl font-semibold tracking-tight">
           Imóveis que combinam com você

@@ -25,6 +25,8 @@ import FeaturedCarousel from "./FeaturedCarousel";
 import MapTeaser from "./MapTeaser";
 import PartnersSection from "./PartnersSection";
 import { MapPin, ArrowLeftRight, Home, Tag, Bed } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { applyFilter } from "@/lib/property-filter";
 
 function getParam(
   params: Record<string, string | string[] | undefined> | undefined,
@@ -35,10 +37,7 @@ function getParam(
   return Array.isArray(v) ? v[0] : (v as string | undefined);
 }
 
-function buildVerTodosHref(
-  sectionSlug: string,
-  filters: FormValues
-): string {
+function buildVerTodosHref(sectionSlug: string, filters: FormValues): string {
   const q = new URLSearchParams();
   q.set("secao", sectionSlug);
   const mode = filters.mode ?? "venda";
@@ -48,7 +47,8 @@ function buildVerTodosHref(
   if (filters.bedrooms) q.set("bedrooms", filters.bedrooms);
   if (filters.priceRange) q.set("priceRange", filters.priceRange);
   if (filters.tag && filters.tag !== "__all__") q.set("tag", filters.tag);
-  if (filters.builder && filters.builder !== "__all__") q.set("builder", filters.builder);
+  if (filters.builder && filters.builder !== "__all__")
+    q.set("builder", filters.builder);
   return `/imoveis?${q.toString()}`;
 }
 
@@ -64,65 +64,6 @@ const schema = z.object({
 type FormValues = z.input<typeof schema>;
 
 type SectionWithProperties = { section: SectionDto; properties: Property[] };
-
-function propertyHasTransactionType(p: Property, modeValue: string): boolean {
-  const m = String(modeValue).toLowerCase().trim();
-  const types = Array.isArray(p.transactionTypes) ? p.transactionTypes : [];
-  const hasType = types.some((t) => String(t).toLowerCase().trim() === m);
-  if (hasType) return true;
-  if (m === "venda" || m === "compra") return (typeof p.priceVenda === "number" && p.priceVenda > 0);
-  if (["aluguel", "locação", "locacao"].includes(m)) return (typeof p.priceAluguel === "number" && p.priceAluguel > 0);
-  if (m === "crowdfunding") return (typeof p.priceCrowdfunding === "number" && p.priceCrowdfunding > 0);
-  return false;
-}
-
-function applyFilter(
-  list: Property[],
-  { city, mode, type, bedrooms, priceRange, builder, tag }: FormValues
-): Property[] {
-  const modeNorm = mode ? String(mode).toLowerCase().trim() : "venda";
-
-  return list.filter((p) => {
-    if (modeNorm && !propertyHasTransactionType(p, modeNorm)) return false;
-
-    if (city && city !== "__all__") {
-      const c = `${p.address.city}-${p.address.state}`;
-      if (c !== city) return false;
-    }
-    if (type && String(p.type).toLowerCase() !== String(type).toLowerCase())
-      return false;
-    if (bedrooms) {
-      const min = Number(bedrooms);
-      if (!Number.isNaN(min) && p.bedrooms < min) return false;
-    }
-    if (priceRange) {
-      const m = String(mode ?? "venda").toLowerCase();
-      const priceForRange =
-        (m === "aluguel" || m === "locação" || m === "locacao") && p.priceAluguel != null && Number(p.priceAluguel) > 0
-          ? Number(p.priceAluguel)
-          : m === "crowdfunding" && p.priceCrowdfunding != null && Number(p.priceCrowdfunding) > 0
-            ? Number(p.priceCrowdfunding)
-            : (p.priceVenda != null && Number(p.priceVenda) > 0 ? Number(p.priceVenda) : p.price);
-      if (priceRange === "lt500k" && !(priceForRange <= 500000)) return false;
-      if (priceRange === "500k-1m" && !(priceForRange >= 500000 && priceForRange <= 1000000))
-        return false;
-      if (priceRange === "1m-2m" && !(priceForRange >= 1000000 && priceForRange <= 2000000))
-        return false;
-      if (priceRange === "gt2m" && !(priceForRange > 2000000)) return false;
-    }
-    if (builder && builder !== "__all__" && p.builder !== builder) return false;
-    if (tag && tag !== "__all__") {
-      const tagList = p.tagImovel ?? [];
-      const hasTag =
-        tagList.includes(tag) ||
-        tagList.some(
-          (t) => t.toLowerCase() === tag.toLowerCase()
-        );
-      if (!hasTag) return false;
-    }
-    return true;
-  });
-}
 
 const FALLBACK_TRANSACTION_TYPES: TransactionTypeOption[] = [
   { value: "venda", label: "Venda" },
@@ -147,26 +88,35 @@ function PropertyCatalog({
   partnerLogos?: { url: string; name?: string }[];
   transactionTypes?: TransactionTypeOption[];
 }) {
-  const typeOptions = transactionTypes.length > 0 ? transactionTypes : FALLBACK_TRANSACTION_TYPES;
+  const typeOptions =
+    transactionTypes.length > 0 ? transactionTypes : FALLBACK_TRANSACTION_TYPES;
   const defaultMode = typeOptions[0]?.value ?? "venda";
 
-  const defaultValuesFromParams = useMemo(
-    () => {
-      const modeParam = getParam(initialSearchParams, "mode");
-      const modeMapped = modeParam === "comprar" ? "venda" : modeParam === "alugar" ? "aluguel" : modeParam;
-      const mode = (modeMapped && typeOptions.some((t) => t.value === modeMapped)) ? modeMapped : defaultMode;
-      return {
+  const defaultValuesFromParams = useMemo(() => {
+    const modeParam = getParam(initialSearchParams, "mode");
+    const modeMapped =
+      modeParam === "comprar"
+        ? "venda"
+        : modeParam === "alugar"
+          ? "aluguel"
+          : modeParam;
+    const mode =
+      modeMapped && typeOptions.some((t) => t.value === modeMapped)
+        ? modeMapped
+        : defaultMode;
+    return {
       mode,
       tag: getParam(initialSearchParams, "tag") ?? "__all__",
       builder: getParam(initialSearchParams, "builder") ?? "__all__",
       city: getParam(initialSearchParams, "city"),
       type: getParam(initialSearchParams, "type") as FormValues["type"],
       bedrooms: getParam(initialSearchParams, "bedrooms"),
-      priceRange: getParam(initialSearchParams, "priceRange") as FormValues["priceRange"],
-      };
-    },
-    [initialSearchParams, typeOptions, defaultMode]
-  );
+      priceRange: getParam(
+        initialSearchParams,
+        "priceRange"
+      ) as FormValues["priceRange"],
+    };
+  }, [initialSearchParams, typeOptions, defaultMode]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -215,7 +165,15 @@ function PropertyCatalog({
     return () => {
       if (searchTrackRef.current) clearTimeout(searchTrackRef.current);
     };
-  }, [watchValues.city, watchValues.mode, watchValues.type, watchValues.bedrooms, watchValues.priceRange, watchValues.tag, watchValues.builder]);
+  }, [
+    watchValues.city,
+    watchValues.mode,
+    watchValues.type,
+    watchValues.bedrooms,
+    watchValues.priceRange,
+    watchValues.tag,
+    watchValues.builder,
+  ]);
 
   const builderOptions = useMemo(() => {
     const { city } = watchValues;
@@ -229,10 +187,22 @@ function PropertyCatalog({
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [properties, watchValues.city]);
 
+  const builderSelectItems = useMemo(
+    () => [
+      { value: "__all__", label: "Todas" },
+      ...builderOptions.map((name) => ({ value: name, label: name })),
+    ],
+    [builderOptions]
+  );
+
   const tagOptions = useMemo(() => {
     if (tags.length > 0) {
       return tags
-        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name))
+        .sort(
+          (a, b) =>
+            (a.sortOrder ?? 0) - (b.sortOrder ?? 0) ||
+            a.name.localeCompare(b.name)
+        )
         .map((t) => t.name);
     }
     const set = new Set<string>();
@@ -248,10 +218,12 @@ function PropertyCatalog({
   );
 
   const filteredSections = useMemo(() => {
-    const withFiltered = sectionsWithProperties.map(({ section, properties: sectionProps }) => ({
-      section,
-      properties: applyFilter(sectionProps, watchValues),
-    }));
+    const withFiltered = sectionsWithProperties.map(
+      ({ section, properties: sectionProps }) => ({
+        section,
+        properties: applyFilter(sectionProps, watchValues),
+      })
+    );
     return withFiltered.filter(({ properties }) => properties.length > 0);
   }, [sectionsWithProperties, watchValues, watchMode]);
 
@@ -271,14 +243,16 @@ function PropertyCatalog({
       .filter((p): p is Property => p != null);
   }, [properties, featuredPropertyIds]);
 
-  const bannerProperty = (filtered[0] ?? properties[0]) ?? null;
+  const bannerProperty = filtered[0] ?? properties[0] ?? null;
+  const hasPartners =
+    Array.isArray(partnerLogos) && partnerLogos.length > 0;
 
   return (
     <>
       {/* Filtro desktop/tablet */}
       <div className="sticky top-32 z-40 mb-20 mt-8 relative hidden md:block">
         <Form {...form}>
-          <form className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 relative z-40">
+          <form className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 relative z-40 [&>*]:min-w-0">
             {/* Localização */}
             <FormField
               control={form.control}
@@ -289,12 +263,12 @@ function PropertyCatalog({
                     Localização
                   </span>
                   <FormControl>
-                    <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <MapPin className="h-4 w-4 text-black/15" />
+                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                      <MapPin className="h-4 w-4 shrink-0 text-black/15" />
                       <Select
                         value={field.value ?? undefined}
                         onValueChange={field.onChange}
-                        className="w-full text-black/80 border-0 bg-transparent px-0"
+                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
                         menuClassName="w-[340px]"
                       >
                         <SelectTrigger className="w-full">
@@ -324,23 +298,22 @@ function PropertyCatalog({
                     Tipo de Transação
                   </span>
                   <FormControl>
-                    <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <ArrowLeftRight className="h-4 w-4 text-black/15" />
+                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                      <ArrowLeftRight className="h-4 w-4 shrink-0 text-black/15" />
                       <Select
                         value={field.value ?? defaultMode}
                         onValueChange={field.onChange}
-                        className="w-full text-black/80 border-0 bg-transparent px-0"
+                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
+                        menuMinWidth={220}
+                        items={typeOptions.map((opt) => ({
+                          value: opt.value,
+                          label: opt.label,
+                        }))}
+                        placeholder="Transação"
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Transação" />
                         </SelectTrigger>
-                        <SelectContent>
-                          {typeOptions.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
                       </Select>
                     </div>
                   </FormControl>
@@ -357,14 +330,14 @@ function PropertyCatalog({
                     Tipo
                   </span>
                   <FormControl>
-                    <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <Home className="h-4 w-4 text-black/15" />
+                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                      <Home className="h-4 w-4 shrink-0 text-black/15" />
                       <Select
                         value={field.value ?? undefined}
                         onValueChange={(val) =>
                           field.onChange(val === "__all__" ? undefined : val)
                         }
-                        className="w-full text-black/80 border-0 bg-transparent px-0"
+                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Tipo" />
@@ -394,14 +367,14 @@ function PropertyCatalog({
                     Quartos
                   </span>
                   <FormControl>
-                    <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <Bed className="h-4 w-4 text-black/15" />
+                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                      <Bed className="h-4 w-4 shrink-0 text-black/15" />
                       <Select
                         value={field.value ?? undefined}
                         onValueChange={(val) =>
                           field.onChange(val === "__all__" ? undefined : val)
                         }
-                        className="w-full text-black/80 border-0 bg-transparent px-0"
+                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Quartos" />
@@ -430,14 +403,14 @@ function PropertyCatalog({
                     Preço
                   </span>
                   <FormControl>
-                    <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <Tag className="h-4 w-4 text-black/15" />
+                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                      <Tag className="h-4 w-4 shrink-0 text-black/15" />
                       <Select
                         value={field.value ?? undefined}
                         onValueChange={(val) =>
                           field.onChange(val === "__all__" ? undefined : val)
                         }
-                        className="w-full text-black/80 border-0 bg-transparent px-0"
+                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
                         menuClassName="w-[280px]"
                       >
                         <SelectTrigger className="w-full">
@@ -446,9 +419,15 @@ function PropertyCatalog({
                         <SelectContent>
                           <SelectItem value="__all__">Todos</SelectItem>
                           <SelectItem value="lt500k">Até R$ 500.000</SelectItem>
-                          <SelectItem value="500k-1m">R$ 500.000 - R$ 1.000.000</SelectItem>
-                          <SelectItem value="1m-2m">R$ 1.000.000 - R$ 2.000.000</SelectItem>
-                          <SelectItem value="gt2m">Acima de R$ 2.000.000</SelectItem>
+                          <SelectItem value="500k-1m">
+                            R$ 500.000 - R$ 1.000.000
+                          </SelectItem>
+                          <SelectItem value="1m-2m">
+                            R$ 1.000.000 - R$ 2.000.000
+                          </SelectItem>
+                          <SelectItem value="gt2m">
+                            Acima de R$ 2.000.000
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -466,12 +445,12 @@ function PropertyCatalog({
                     Tags
                   </span>
                   <FormControl>
-                    <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <Tag className="h-4 w-4 text-black/15" />
+                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                      <Tag className="h-4 w-4 shrink-0 text-black/15" />
                       <Select
                         value={field.value ?? "__all__"}
                         onValueChange={field.onChange}
-                        className="w-full text-black/80 border-0 bg-transparent px-0"
+                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Selecione" />
@@ -500,24 +479,19 @@ function PropertyCatalog({
                     Construtora
                   </span>
                   <FormControl>
-                    <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <Home className="h-4 w-4 text-black/15" />
+                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                      <Home className="h-4 w-4 shrink-0 text-black/15" />
                       <Select
                         value={field.value ?? "__all__"}
                         onValueChange={field.onChange}
-                        className="w-full text-black/80 border-0 bg-transparent px-0"
+                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
+                        items={builderSelectItems}
+                        placeholder="Construtora"
+                        menuMinWidth={200}
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Construtora" />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__all__">Todas</SelectItem>
-                          {builderOptions.map((name) => (
-                            <SelectItem key={name} value={name}>
-                              {name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
                       </Select>
                     </div>
                   </FormControl>
@@ -538,9 +512,6 @@ function PropertyCatalog({
 
       {/* Drawer anterior do mobile removido em favor do HomeFilter compartilhado */}
 
-      {/* Recomendações baseadas em eventos do visitante (busca e imóveis vistos) */}
-      <RecommendationsSection />
-
       {/* Seções vindas do backend (só aparecem as que você cadastrou) */}
       {displaySections.map(({ section, properties: sectionProps }) => (
         <PropertySection
@@ -556,18 +527,24 @@ function PropertyCatalog({
       ) : bannerProperty ? (
         <FeaturedBanner property={bannerProperty} />
       ) : null}
-      {/* Mapa + parceiros: mobile mostra sequencial; desktop mantém sticky */}
+      {/* Mapa (mesmo ritmo de margem do banner: mb-12 no MapTeaser) → recomendações (grid estático) → parceiros (py-14 + logo rail) */}
       <div className="md:hidden">
         <MapTeaser properties={filtered} />
-        <PartnersSection partnerLogos={partnerLogos} />
       </div>
-      <div className="relative hidden md:block">
-        <div className="sticky top-66 z-10">
-          <MapTeaser properties={filtered} />
+      <div className="hidden md:block">
+        <div className="relative">
+          <div className="sticky top-66 z-10">
+            <MapTeaser properties={filtered} />
+          </div>
+          {/* Com parceiros: faixa longa pro mapa sticky “rolar”; sem parceiros: quase nada — senão fica um vão enorme até as recomendações */}
+          <div
+            aria-hidden="true"
+            className={cn(hasPartners ? "h-[560px]" : "h-px shrink-0")}
+          />
         </div>
-        <div aria-hidden="true" className="h-[560px]" />
-        <PartnersSection partnerLogos={partnerLogos} />
       </div>
+      <RecommendationsSection hasPartnersBelow={hasPartners} />
+      <PartnersSection partnerLogos={partnerLogos} />
     </>
   );
 }

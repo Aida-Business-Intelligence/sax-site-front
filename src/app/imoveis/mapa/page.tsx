@@ -4,8 +4,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { getMapboxToken, siteMapStyle } from "@/lib/mapbox";
-import { getProperties, getCities, getSiteConfig, type TransactionTypeOption } from "@/services/properties";
-import type { Property, City } from "@/types/realEstate";
+import {
+  getProperties,
+  getSiteConfig,
+  getTags,
+  type TransactionTypeOption,
+} from "@/services/properties";
+import type { TagDto } from "@/lib/sax-api";
+import type { Property } from "@/types/realEstate";
+import { MapPin, ArrowLeftRight, Home, Tag, Bed } from "lucide-react";
+import {
+  applyFilter,
+  type PropertyFilterValues,
+} from "@/lib/property-filter";
 
 const FALLBACK_TRANSACTION_TYPES: TransactionTypeOption[] = [
   { value: "venda", label: "Venda" },
@@ -13,14 +24,11 @@ const FALLBACK_TRANSACTION_TYPES: TransactionTypeOption[] = [
   { value: "crowdfunding", label: "Crowdfunding" },
 ];
 
-function propertyHasTransactionType(p: Property, modeValue: string): boolean {
-  const m = String(modeValue).toLowerCase().trim();
-  const types = Array.isArray(p.transactionTypes) ? p.transactionTypes : [];
-  if (types.some((t) => String(t).toLowerCase().trim() === m)) return true;
-  if (m === "venda" || m === "compra") return (typeof p.priceVenda === "number" && p.priceVenda > 0);
-  if (["aluguel", "locação", "locacao"].includes(m)) return (typeof p.priceAluguel === "number" && p.priceAluguel > 0);
-  if (m === "crowdfunding") return (typeof p.priceCrowdfunding === "number" && p.priceCrowdfunding > 0);
-  return false;
+/** Só imóveis com coordenadas válidas entram como marcador no mapa. */
+function hasValidMapCoords(p: Property): boolean {
+  const lat = Number(p.address?.lat);
+  const lng = Number(p.address?.lng);
+  return Number.isFinite(lat) && Number.isFinite(lng);
 }
 import {
   Form,
@@ -38,7 +46,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import PropertyDialog from "@/components/modals/PropertyDialog";
 import HomeFilter, { type FormValues as HomeFilterValues } from "@/sections/home/HomeFilter";
@@ -47,11 +54,40 @@ const schema = z.object({
   city: z.string().optional(),
   mode: z.string().default("venda"),
   type: z.enum(["casa", "apartamento", "terreno", "comercial"]).optional(),
-  status: z.enum(["na-planta", "em-construcao", "pronto"]).optional(),
   bedrooms: z.string().optional(),
+  priceRange: z.enum(["lt500k", "500k-1m", "1m-2m", "gt2m"]).optional(),
+  tag: z.string().optional(),
   builder: z.string().optional(),
 });
 type FormValues = z.input<typeof schema>;
+
+function toFilterPayload(v: FormValues): PropertyFilterValues {
+  return {
+    city: v.city && v.city !== "__all__" ? v.city : undefined,
+    mode: v.mode,
+    type: v.type,
+    bedrooms: v.bedrooms && v.bedrooms !== "__all__" ? v.bedrooms : undefined,
+    priceRange: v.priceRange,
+    tag: v.tag && v.tag !== "__all__" ? v.tag : undefined,
+    builder:
+      v.builder && v.builder !== "__all__" && v.builder !== ""
+        ? v.builder
+        : undefined,
+  };
+}
+
+function buildImoveisListHref(v: FormValues): string {
+  const params = new URLSearchParams();
+  if (v.city && v.city !== "__all__") params.set("city", v.city);
+  if (v.mode) params.set("mode", v.mode);
+  if (v.type) params.set("type", v.type);
+  if (v.bedrooms && v.bedrooms !== "__all__") params.set("bedrooms", v.bedrooms);
+  if (v.priceRange) params.set("priceRange", v.priceRange);
+  if (v.tag && v.tag !== "__all__") params.set("tag", v.tag);
+  if (v.builder && v.builder !== "__all__") params.set("builder", v.builder);
+  const q = params.toString();
+  return q ? `/imoveis?${q}` : "/imoveis";
+}
 
 export default function MapaPage() {
   const [transactionTypes, setTransactionTypes] = useState<TransactionTypeOption[]>(FALLBACK_TRANSACTION_TYPES);
@@ -63,20 +99,23 @@ export default function MapaPage() {
       mode: defaultMode,
       city: undefined,
       type: undefined,
-      status: undefined,
       bedrooms: undefined,
-      builder: "",
+      priceRange: undefined,
+      tag: undefined,
+      builder: undefined,
     },
   });
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const [allProperties, setAllProperties] = useState<Property[]>([]);
-  const [cities, setCities] = useState<City[]>([]);
+  const [tagsFromApi, setTagsFromApi] = useState<TagDto[]>([]);
 
   useEffect(() => {
     getProperties().then(setAllProperties);
-    getCities().then(setCities);
+  }, []);
+  useEffect(() => {
+    getTags().then(setTagsFromApi);
   }, []);
   useEffect(() => {
     getSiteConfig().then((c) => {
@@ -84,18 +123,26 @@ export default function MapaPage() {
     });
   }, []);
 
-  const cityOptions = useMemo(
-    () =>
-      cities.map((c) => ({
-        value: `${c.name}-${c.state}`,
-        label: `${c.name} - ${c.state}`,
-      })),
-    [cities]
-  );
+  /** Mesma origem que /imoveis e HomeFilter: cidades presentes nos imóveis da API (ou fallback mock). */
+  const cityOptions = useMemo(() => {
+    const set = new Set<string>();
+    (allProperties ?? []).forEach((p) => {
+      set.add(`${p.address.city}-${p.address.state}`);
+    });
+    return Array.from(set)
+      .sort((a, b) => a.localeCompare(b))
+      .map((value) => ({
+        value,
+        label: value.replace("-", " - "),
+      }));
+  }, [allProperties]);
 
   const token = getMapboxToken();
   const INITIAL_CENTER: [number, number] = [-56, -15];
+  /** Desktop: continente América do Sul */
   const INITIAL_ZOOM = 2.1;
+  /** Mobile: globo inteiro (menos zoom), alinhado à vista “globo” com América do Sul */
+  const INITIAL_ZOOM_MOBILE = 1.12;
   const INITIAL_PITCH = 0;
   const INITIAL_BEARING = 0;
 
@@ -110,9 +157,10 @@ export default function MapaPage() {
       container: mapContainer.current,
       style: siteMapStyle,
       center: INITIAL_CENTER, // South America center (globe view)
-      zoom: INITIAL_ZOOM,
+      zoom: isMobile ? INITIAL_ZOOM_MOBILE : INITIAL_ZOOM,
       pitch: INITIAL_PITCH,
       bearing: INITIAL_BEARING,
+      minZoom: isMobile ? 0.85 : undefined,
     });
     mapRef.current = map;
     map.addControl(
@@ -120,8 +168,21 @@ export default function MapaPage() {
       "top-right"
     );
     map.on("style.load", () => {
-      if (isMobile) {
-        // Mobile: 3D buildings instead of globe
+      const mapApi = map as unknown as {
+        setProjection?: (mode: string) => void;
+        setFog?: (cfg: Record<string, unknown>) => void;
+      };
+      // Mobile + desktop: globo. No mobile a névoa clara deixava o fundo branco; usamos céu escuro + estrelas (como antes da névoa clara).
+      mapApi.setProjection?.("globe");
+      // Mesmo céu escuro + estrelas no mobile e no desktop
+      mapApi.setFog?.({
+        color: "rgb(18, 26, 42)",
+        "high-color": "rgb(32, 44, 68)",
+        "space-color": "rgb(6, 8, 18)",
+        "horizon-blend": 0.14,
+        "star-intensity": 0.5,
+      });
+      if (!isMobile) {
         try {
           const layers = map.getStyle().layers ?? [];
           const labelLayerId = layers.find(
@@ -161,44 +222,9 @@ export default function MapaPage() {
             labelLayerId ?? undefined
           );
         } catch {}
-      } else {
-        // Desktop: globe projection + fog
-        const mapApi = map as unknown as {
-          setProjection?: (mode: string) => void;
-          setFog?: (cfg: Record<string, unknown>) => void;
-        };
-        mapApi.setProjection?.("globe");
-        mapApi.setFog?.({
-          color: "rgb(240,240,242)",
-          "high-color": "rgb(240,240,242)",
-          "space-color": "rgb(230,230,235)",
-          "horizon-blend": 0.02,
-          "star-intensity": 0,
-        });
       }
     });
 
-    // Mobile: center on user's location if permitted, with 3D angle
-    map.once("load", () => {
-      if (isMobile && typeof navigator !== "undefined" && "geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const { latitude, longitude } = pos.coords;
-            map.easeTo({
-              center: [longitude, latitude],
-              zoom: 14,
-              pitch: 60,
-              bearing: 24,
-              duration: 800,
-            });
-          },
-          () => {
-            // ignore errors; stay on default view
-          },
-          { enableHighAccuracy: true, timeout: 5000, maximumAge: 10000 }
-        );
-      }
-    });
     return () => map.remove();
   }, [token]);
 
@@ -224,38 +250,46 @@ export default function MapaPage() {
   const watchValues = form.watch();
   const [selected, setSelected] = useState<Property | null>(null);
   const filtered = useMemo(() => {
-    const { city, mode, bedrooms, type, builder } = watchValues;
-    return (allProperties ?? []).filter((p) => {
-      if (mode && !propertyHasTransactionType(p, mode)) return false;
-      if (city) {
-        const c = `${p.address.city}-${p.address.state}`;
-        if (c !== city) return false;
-      }
-      if (type && p.type !== type) return false;
-      if (bedrooms) {
-        const min = Number(bedrooms);
-        if (!Number.isNaN(min) && p.bedrooms < min) return false;
-      }
-      if (builder && p.builder !== builder) return false;
-      return (
-        typeof p.address.lat === "number" && typeof p.address.lng === "number"
-      );
-    });
+    const list = applyFilter(allProperties ?? [], toFilterPayload(watchValues));
+    return list.filter(hasValidMapCoords);
   }, [allProperties, watchValues]);
 
-  // Builder options depend on city
   const builderOptions = useMemo(() => {
-    const city = watchValues.city;
-    if (!city) return [] as string[];
-    const [name, state] = city.split("-");
+    const { city } = watchValues;
     const set = new Set<string>();
     (allProperties ?? []).forEach((p) => {
-      if (p.address.city === name && p.address.state === state && p.builder) {
-        set.add(p.builder);
-      }
+      if (!p.builder) return;
+      const cityKey = `${p.address.city}-${p.address.state}`;
+      if (city && city !== "__all__" && cityKey !== city) return;
+      set.add(p.builder);
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [allProperties, watchValues.city]);
+
+  const tagOptions = useMemo(() => {
+    if (tagsFromApi.length > 0) {
+      return [...tagsFromApi]
+        .sort(
+          (a, b) =>
+            (a.sortOrder ?? 0) - (b.sortOrder ?? 0) ||
+            a.name.localeCompare(b.name)
+        )
+        .map((t) => t.name);
+    }
+    const set = new Set<string>();
+    (allProperties ?? []).forEach((p) => {
+      (p.tagImovel ?? []).forEach((a) => set.add(a));
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [tagsFromApi, allProperties]);
+
+  const builderSelectItems = useMemo(
+    () => [
+      { value: "__all__", label: "Todas" },
+      ...builderOptions.map((name) => ({ value: name, label: name })),
+    ],
+    [builderOptions]
+  );
 
   useEffect(() => {
     const map = mapRef.current;
@@ -268,12 +302,15 @@ export default function MapaPage() {
     const addMarkersAndGetBounds = (items: Property[]) => {
       const b = new mapboxgl.LngLatBounds();
       items.forEach((p) => {
+        if (!hasValidMapCoords(p)) return;
+        const lng = Number(p.address.lng);
+        const lat = Number(p.address.lat);
         const marker = new mapboxgl.Marker({
           element: createPriceMarkerEl(p, () => setSelected(p)),
           anchor: "bottom",
-        }).setLngLat([p.address.lng as number, p.address.lat as number]);
+        }).setLngLat([lng, lat]);
         markersRef.current.push(marker.addTo(map));
-        b.extend([p.address.lng as number, p.address.lat as number]);
+        b.extend([lng, lat]);
       });
       return b;
     };
@@ -281,16 +318,19 @@ export default function MapaPage() {
     let bounds: mapboxgl.LngLatBounds | null = null;
     if (filtered.length) {
       bounds = addMarkersAndGetBounds(filtered);
-    } else if (watchValues.city) {
+    } else if (watchValues.city && watchValues.city !== "__all__") {
       // Conjunto base por cidade (ignora outros filtros) para garantir navegação ao trocar apenas a localização
       const [cityName, state] = (watchValues.city ?? "").split("-");
       const cityItems = (allProperties ?? []).filter(
-        (p) => p.address.city === cityName && p.address.state === state
+        (p) =>
+          p.address.city === cityName &&
+          p.address.state === state &&
+          hasValidMapCoords(p)
       );
       bounds = cityItems.length ? addMarkersAndGetBounds(cityItems) : null;
     }
 
-    if (bounds && !bounds.isEmpty() && watchValues.city) {
+    if (bounds && !bounds.isEmpty() && watchValues.city && watchValues.city !== "__all__") {
       const isMobile =
         typeof window !== "undefined" &&
         window.matchMedia?.("(max-width: 767px)").matches;
@@ -309,10 +349,13 @@ export default function MapaPage() {
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    if (!watchValues.city) {
+    if (!watchValues.city || watchValues.city === "__all__") {
+      const isMobile =
+        typeof window !== "undefined" &&
+        window.matchMedia?.("(max-width: 767px)").matches;
       map.easeTo({
         center: INITIAL_CENTER,
-        zoom: INITIAL_ZOOM,
+        zoom: isMobile ? INITIAL_ZOOM_MOBILE : INITIAL_ZOOM,
         pitch: INITIAL_PITCH,
         bearing: INITIAL_BEARING,
         duration: 400,
@@ -322,32 +365,43 @@ export default function MapaPage() {
 
   return (
     <div className="relative min-h-screen">
-      {/* Sticky filter bar (desktop/tablet only) */}
-      <div className="sticky top-24 z-30 mx-auto hidden max-w-7xl px-4 sm:px-6 md:block">
-        <div className="rounded-full border border-zinc-200 bg-white/80 px-4 py-2 shadow-lg backdrop-blur-md ring-1 ring-black/5 dark:border-zinc-800 dark:bg-zinc-900/70">
+      {/* Sticky: mesmo padrão visual de /imoveis (grid + label + ícone) */}
+      <div className="sticky top-28 z-30 mx-auto hidden max-w-7xl px-4 sm:px-6 md:top-32 md:block">
+        <div className="rounded-2xl border border-zinc-200 bg-white/90 px-4 py-4 shadow-lg backdrop-blur-md ring-1 ring-black/5 dark:border-zinc-800 dark:bg-zinc-900/80">
           <Form {...form}>
-            <form className="flex flex-wrap items-center gap-3 overflow-visible">
+            <form className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-8 items-end [&>*]:min-w-0">
               <FormField
                 control={form.control}
                 name="city"
                 render={({ field }) => (
-                  <FormItem className="w-[220px] shrink-0">
+                  <FormItem>
+                    <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                      Localização
+                    </span>
                     <FormControl>
-                      <Select
-                        value={field.value ?? undefined}
-                        onValueChange={field.onChange}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Localização" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {cityOptions.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                        <MapPin className="h-4 w-4 shrink-0 text-black/15" />
+                        <Select
+                          value={field.value ?? undefined}
+                          onValueChange={(val) =>
+                            field.onChange(val === "__all__" ? undefined : val)
+                          }
+                          className="min-w-0 flex-1 border-0 bg-transparent px-0 text-black/80"
+                          menuClassName="w-[340px]"
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Localização" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Todos</SelectItem>
+                            {cityOptions.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </FormControl>
                   </FormItem>
                 )}
@@ -356,23 +410,29 @@ export default function MapaPage() {
                 control={form.control}
                 name="mode"
                 render={({ field }) => (
-                  <FormItem className="w-[150px] shrink-0">
+                  <FormItem>
+                    <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                      Tipo de Transação
+                    </span>
                     <FormControl>
-                      <Select
-                        value={field.value ?? defaultMode}
-                        onValueChange={field.onChange}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Transação" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {transactionTypes.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                        <ArrowLeftRight className="h-4 w-4 shrink-0 text-black/15" />
+                        <Select
+                          value={field.value ?? defaultMode}
+                          onValueChange={field.onChange}
+                          className="min-w-0 flex-1 border-0 bg-transparent px-0 text-black/80"
+                          menuMinWidth={220}
+                          items={transactionTypes.map((opt) => ({
+                            value: opt.value,
+                            label: opt.label,
+                          }))}
+                          placeholder="Transação"
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Transação" />
+                          </SelectTrigger>
+                        </Select>
+                      </div>
                     </FormControl>
                   </FormItem>
                 )}
@@ -381,27 +441,34 @@ export default function MapaPage() {
                 control={form.control}
                 name="type"
                 render={({ field }) => (
-                  <FormItem className="w-[170px] shrink-0">
+                  <FormItem>
+                    <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                      Tipo
+                    </span>
                     <FormControl>
-                      <Select
-                        value={field.value ?? undefined}
-                        onValueChange={(val) =>
-                          field.onChange(val === "__all__" ? undefined : val)
-                        }
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Todos" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__all__">Todos</SelectItem>
-                          <SelectItem value="casa">Casa</SelectItem>
-                          <SelectItem value="apartamento">
-                            Apartamento
-                          </SelectItem>
-                          <SelectItem value="terreno">Terreno</SelectItem>
-                          <SelectItem value="comercial">Comercial</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                        <Home className="h-4 w-4 shrink-0 text-black/15" />
+                        <Select
+                          value={field.value ?? undefined}
+                          onValueChange={(val) =>
+                            field.onChange(val === "__all__" ? undefined : val)
+                          }
+                          className="min-w-0 flex-1 border-0 bg-transparent px-0 text-black/80"
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Tipo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Todos</SelectItem>
+                            <SelectItem value="casa">Casa</SelectItem>
+                            <SelectItem value="apartamento">
+                              Apartamento
+                            </SelectItem>
+                            <SelectItem value="terreno">Terreno</SelectItem>
+                            <SelectItem value="comercial">Comercial</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </FormControl>
                   </FormItem>
                 )}
@@ -410,48 +477,109 @@ export default function MapaPage() {
                 control={form.control}
                 name="bedrooms"
                 render={({ field }) => (
-                  <FormItem className="w-[130px] shrink-0">
+                  <FormItem>
+                    <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                      Quartos
+                    </span>
                     <FormControl>
-                      <Select
-                        value={field.value ?? undefined}
-                        onValueChange={field.onChange}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Quartos" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">1+</SelectItem>
-                          <SelectItem value="2">2+</SelectItem>
-                          <SelectItem value="3">3+</SelectItem>
-                          <SelectItem value="4">4+</SelectItem>
-                          <SelectItem value="5">5+</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                        <Bed className="h-4 w-4 shrink-0 text-black/15" />
+                        <Select
+                          value={field.value ?? undefined}
+                          onValueChange={(val) =>
+                            field.onChange(val === "__all__" ? undefined : val)
+                          }
+                          className="min-w-0 flex-1 border-0 bg-transparent px-0 text-black/80"
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Quartos" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Todos</SelectItem>
+                            <SelectItem value="1">1+</SelectItem>
+                            <SelectItem value="2">2+</SelectItem>
+                            <SelectItem value="3">3+</SelectItem>
+                            <SelectItem value="4">4+</SelectItem>
+                            <SelectItem value="5">5+</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </FormControl>
                   </FormItem>
                 )}
               />
               <FormField
                 control={form.control}
-                name="status"
+                name="priceRange"
                 render={({ field }) => (
-                  <FormItem className="w-[170px] shrink-0">
+                  <FormItem>
+                    <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                      Preço
+                    </span>
                     <FormControl>
-                      <Select
-                        value={field.value ?? undefined}
-                        onValueChange={field.onChange}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="na-planta">Na planta</SelectItem>
-                          <SelectItem value="em-construcao">
-                            Em construção
-                          </SelectItem>
-                          <SelectItem value="pronto">Pronto</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                        <Tag className="h-4 w-4 shrink-0 text-black/15" />
+                        <Select
+                          value={field.value ?? undefined}
+                          onValueChange={(val) =>
+                            field.onChange(val === "__all__" ? undefined : val)
+                          }
+                          className="min-w-0 flex-1 border-0 bg-transparent px-0 text-black/80"
+                          menuClassName="w-[280px]"
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Todos</SelectItem>
+                            <SelectItem value="lt500k">Até R$ 500.000</SelectItem>
+                            <SelectItem value="500k-1m">
+                              R$ 500.000 - R$ 1.000.000
+                            </SelectItem>
+                            <SelectItem value="1m-2m">
+                              R$ 1.000.000 - R$ 2.000.000
+                            </SelectItem>
+                            <SelectItem value="gt2m">
+                              Acima de R$ 2.000.000
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="tag"
+                render={({ field }) => (
+                  <FormItem>
+                    <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                      Tags
+                    </span>
+                    <FormControl>
+                      <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                        <Tag className="h-4 w-4 shrink-0 text-black/15" />
+                        <Select
+                          value={field.value ?? "__all__"}
+                          onValueChange={(val) =>
+                            field.onChange(val === "__all__" ? undefined : val)
+                          }
+                          className="min-w-0 flex-1 border-0 bg-transparent px-0 text-black/80"
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Todas</SelectItem>
+                            {tagOptions.map((name) => (
+                              <SelectItem key={name} value={name}>
+                                {name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </FormControl>
                   </FormItem>
                 )}
@@ -460,39 +588,46 @@ export default function MapaPage() {
                 control={form.control}
                 name="builder"
                 render={({ field }) => (
-                  <FormItem className="w-[200px] shrink-0">
+                  <FormItem>
+                    <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                      Construtora
+                    </span>
                     <FormControl>
-                      <Select
-                        value={field.value ?? undefined}
-                        onValueChange={field.onChange}
-                        disabled={
-                          !watchValues.city || builderOptions.length === 0
-                        }
-                      >
-                        <SelectTrigger
-                          className="w-full"
-                          disabled={
-                            !watchValues.city || builderOptions.length === 0
+                      <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                        <Home className="h-4 w-4 shrink-0 text-black/15" />
+                        <Select
+                          value={field.value ?? "__all__"}
+                          onValueChange={(val) =>
+                            field.onChange(val === "__all__" ? undefined : val)
                           }
+                          className="min-w-0 flex-1 border-0 bg-transparent px-0 text-black/80"
+                          items={builderSelectItems}
+                          placeholder="Construtora"
+                          menuMinWidth={200}
+                          disabled={builderOptions.length === 0}
                         >
-                          <SelectValue placeholder="Construtora" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {builderOptions.map((name) => (
-                            <SelectItem key={name} value={name}>
-                              {name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                          <SelectTrigger
+                            className="w-full"
+                            disabled={builderOptions.length === 0}
+                          >
+                            <SelectValue placeholder="Construtora" />
+                          </SelectTrigger>
+                        </Select>
+                      </div>
                     </FormControl>
                   </FormItem>
                 )}
               />
-              <div className="ml-auto shrink-0">
+              <div className="flex flex-col justify-end gap-1">
+                <span
+                  className="block px-1 text-[10px] font-medium text-transparent select-none"
+                  aria-hidden
+                >
+                  .
+                </span>
                 <Link
-                  href="/imoveis"
-                  className="rounded-full border border-zinc-300 px-3 py-1 text-xs text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                  href={buildImoveisListHref(watchValues)}
+                  className="inline-flex h-11 shrink-0 items-center justify-center rounded-lg border border-zinc-300 px-4 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-100 dark:hover:bg-zinc-800"
                 >
                   Ver lista
                 </Link>
@@ -502,50 +637,83 @@ export default function MapaPage() {
         </div>
       </div>
 
-      {/* Fullscreen map */}
-      <div ref={mapContainer} className="mt-3 h-[calc(100vh-110px)] w-full" />
+      {/* Fullscreen map; mapa-map-root: offset dos +/- no desktop (globals.css) */}
+      <div
+        ref={mapContainer}
+        className="mapa-map-root mt-3 h-[calc(100vh-110px)] w-full md:h-[calc(100vh-118px)]"
+      />
 
       {/* Mobile: usa o mesmo drawer de filtros da Home; o botão da header dispara open-map-filters */}
       <div className="md:hidden">
         <HomeFilter
           mobileTriggerPosition="top"
           hideMobileTrigger
+          hideStatus
           onSearch={(values: HomeFilterValues) => {
-            // Sincroniza filtros com o formulário da página para atualizar marcadores
             form.setValue("city", values.city ?? undefined);
             form.setValue("mode", values.mode ?? defaultMode);
             form.setValue("type", values.type ?? undefined);
-            form.setValue("bedrooms", values.bedrooms ?? undefined);
-            form.setValue("builder", values.builder ?? undefined);
-            // Calcula bounds e centraliza o mapa
+            form.setValue(
+              "bedrooms",
+              values.bedrooms && values.bedrooms !== "__all__"
+                ? values.bedrooms
+                : undefined
+            );
+            form.setValue(
+              "priceRange",
+              values.priceRange && values.priceRange !== "__all__"
+                ? (values.priceRange as FormValues["priceRange"])
+                : undefined
+            );
+            form.setValue(
+              "tag",
+              values.tag?.length
+                ? values.tag[0]
+                : undefined
+            );
+            form.setValue(
+              "builder",
+              values.builder && values.builder !== "__all__"
+                ? values.builder
+                : undefined
+            );
             const map = mapRef.current;
             if (!map) return;
-            const match = (allProperties ?? []).filter((p) => {
-              if (values.mode && !propertyHasTransactionType(p, values.mode)) return false;
-              if (values.city) {
-                const c = `${p.address.city}-${p.address.state}`;
-                if (c !== values.city) return false;
-              }
-              if (values.type && p.type !== values.type) return false;
-              if (values.bedrooms) {
-                const min = Number(values.bedrooms);
-                if (!Number.isNaN(min) && p.bedrooms < min) return false;
-              }
-              if (values.builder && p.builder !== values.builder) return false;
-              return (
-                typeof p.address.lat === "number" &&
-                typeof p.address.lng === "number"
-              );
-            });
+            const payload: PropertyFilterValues = {
+              city:
+                values.city && values.city !== "__all__"
+                  ? values.city
+                  : undefined,
+              mode: values.mode,
+              type: values.type,
+              bedrooms:
+                values.bedrooms && values.bedrooms !== "__all__"
+                  ? values.bedrooms
+                  : undefined,
+              priceRange:
+                values.priceRange && values.priceRange !== "__all__"
+                  ? values.priceRange
+                  : undefined,
+              builder:
+                values.builder && values.builder !== "__all__"
+                  ? values.builder
+                  : undefined,
+              tags:
+                Array.isArray(values.tag) && values.tag.length
+                  ? values.tag
+                  : undefined,
+            };
+            const match = applyFilter(allProperties ?? [], payload).filter(
+              hasValidMapCoords
+            );
             if (match.length) {
               const bounds = new mapboxgl.LngLatBounds();
-              match.forEach((p) =>
-                bounds.extend([p.address.lng as number, p.address.lat as number])
-              );
+              match.forEach((p) => {
+                bounds.extend([Number(p.address.lng), Number(p.address.lat)]);
+              });
               map.fitBounds(bounds, { padding: 60, duration: 700, maxZoom: 14 });
               map.once("moveend", () => map.easeTo({ padding: 0, duration: 0 }));
             }
-            // Fecha o drawer (evento usado pelo HomeFilter)
             try {
               window.dispatchEvent(new CustomEvent("close-map-filters"));
             } catch {}
