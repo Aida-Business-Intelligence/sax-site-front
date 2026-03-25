@@ -3,18 +3,17 @@
 import Image from "next/image";
 import React from "react";
 
-const galleryImages: string[] = [
-  "/assets/images/home/bc1.png",
-  "/assets/images/home/bc1.png",
-  "/assets/images/home/bc1.png",
-  "/assets/images/home/bc1.png",
-  "/assets/images/home/bc1.png",
-  "/assets/images/home/bc1.png",
-];
+import type { ExclusiveProjectsContent } from "@/lib/exclusive-projects-content";
+import { resolveExclusiveProjectImageUrl } from "@/lib/exclusive-projects-content";
 
-export function FinalShowcaseSection() {
+type Props = {
+  showcase: ExclusiveProjectsContent["showcase"];
+};
+
+export function FinalShowcaseSection({ showcase }: Props) {
   const [index, setIndex] = React.useState(0);
-  const total = galleryImages.length;
+  const galleryUrls = showcase.galleryUrls.map((u) => resolveExclusiveProjectImageUrl(u));
+  const total = Math.max(galleryUrls.length, 1);
 
   const prev = () => setIndex((i) => (i - 1 + total) % total);
   const next = () => setIndex((i) => (i + 1) % total);
@@ -25,25 +24,16 @@ export function FinalShowcaseSection() {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <div>
           <div className="text-xs uppercase tracking-wide text-zinc-500">
-            Final
+            {showcase.kicker}
           </div>
           <h2 className="mt-1 text-3xl font-semibold tracking-tight">
-            JUST GO IN!
+            {showcase.title}
           </h2>
           <p className="mt-2 max-w-lg text-sm text-zinc-600 dark:text-zinc-300">
-            Resultado final e entrega das chaves.
+            {showcase.subtitle}
           </p>
           <ul className="mt-4 space-y-2 text-sm">
-            {[
-              "Forros de gesso",
-              "Pinturas e texturas",
-              "Móveis planejados",
-              "Assentamento de revestimentos e pisos",
-              "Mármores e granitos",
-              "Iluminação",
-              "Mobiliários móveis e decoração",
-              "Eletrodomésticos",
-            ].map((item) => (
+            {showcase.bullets.map((item) => (
               <li key={item} className="flex items-start gap-2">
                 <span className="mt-[2px] text-[#19F5CC]">●</span>
                 <span className="text-zinc-700 dark:text-zinc-300">{item}</span>
@@ -54,12 +44,11 @@ export function FinalShowcaseSection() {
 
         <div className="relative">
           <div className="relative aspect-[16/10] overflow-hidden rounded-2xl border">
-            {/* Track */}
             <div
               className="flex h-full w-full transition-transform duration-500 ease-out"
               style={{ transform: `translateX(-${index * 100}%)` }}
             >
-              {galleryImages.map((src, i) => (
+              {galleryUrls.map((src, i) => (
                 <div key={`${src}-${i}`} className="relative h-full w-full flex-shrink-0">
                   <Image
                     src={src}
@@ -73,8 +62,8 @@ export function FinalShowcaseSection() {
               ))}
             </div>
 
-            {/* Arrows */}
             <button
+              type="button"
               onClick={prev}
               aria-label="Anterior"
               className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-[#19F5CC] p-2 text-black shadow hover:opacity-90"
@@ -82,6 +71,7 @@ export function FinalShowcaseSection() {
               ‹
             </button>
             <button
+              type="button"
               onClick={next}
               aria-label="Próximo"
               className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-[#19F5CC] p-2 text-black shadow hover:opacity-90"
@@ -90,11 +80,11 @@ export function FinalShowcaseSection() {
             </button>
           </div>
 
-          {/* Thumbnails */}
           <div className="mt-3 flex gap-3 overflow-x-auto">
-            {galleryImages.map((src, i) => (
+            {galleryUrls.map((src, i) => (
               <button
                 key={`${src}-thumb-${i}`}
+                type="button"
                 onClick={() => goTo(i)}
                 aria-label={`Ir para imagem ${i + 1}`}
                 className={`relative h-16 w-24 flex-shrink-0 overflow-hidden rounded-lg border ${
@@ -116,5 +106,3 @@ export function FinalShowcaseSection() {
     </section>
   );
 }
-
-

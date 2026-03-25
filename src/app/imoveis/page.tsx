@@ -1,5 +1,6 @@
 import { getProperties, getSectionsWithProperties, getTags, getSiteConfig } from "@/services/properties";
 import { buildMetadata } from "@/lib/seo";
+import { cn } from "@/lib/utils";
 import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
 import { PropertyCatalog } from "@/sections/imoveis/PropertyCatalog";
 
@@ -27,8 +28,12 @@ export default async function ImoveisPage({
     getTags(),
     getSiteConfig(),
   ]);
+  const partnerLogos = siteConfig?.partnerLogos ?? [];
+  const hasPartners = Array.isArray(partnerLogos) && partnerLogos.length > 0;
   return (
-    <div className="relative min-h-screen pb-28">
+    <div
+      className={cn("relative min-h-screen", hasPartners ? "pb-28" : "pb-14 md:pb-16")}
+    >
       {/* Background illustration with 3% opacity, full width */}
       <div
         aria-hidden="true"
@@ -36,7 +41,12 @@ export default async function ImoveisPage({
         style={{ backgroundImage: "url('/assets/images/home/bc1.png')" }}
       />
 
-      <div className="mx-auto max-w-7xl px-4 pt-8 pb-10 sm:px-6 md:pt-10">
+      <div
+        className={cn(
+          "mx-auto max-w-7xl px-4 pt-8 sm:px-6 md:pt-10",
+          hasPartners ? "pb-10" : "pb-5 md:pb-6"
+        )}
+      >
         <Breadcrumbs items={[{ label: "Início", href: "/" }, { label: "Imóveis", href: "/imoveis" }]} />
         <PropertyCatalog
           properties={properties}
@@ -44,7 +54,7 @@ export default async function ImoveisPage({
           tags={tags}
           initialSearchParams={params}
           featuredPropertyIds={siteConfig?.featuredPropertyIds ?? []}
-          partnerLogos={siteConfig?.partnerLogos ?? []}
+          partnerLogos={partnerLogos}
           transactionTypes={siteConfig?.transactionTypes ?? []}
         />
       </div>

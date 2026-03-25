@@ -59,6 +59,8 @@ type HomeFilterProps = {
   // On some pages (e.g., /imoveis/mapa) we open the drawer via header button,
   // so we hide the trigger but keep the drawer logic mounted.
   hideMobileTrigger?: boolean;
+  /** Oculta o filtro de status (ex.: /imoveis/mapa — ainda sem dados consistentes). */
+  hideStatus?: boolean;
   // Optional override to handle the search action externally (e.g., /imoveis/mapa)
   onSearch?: (values: FormValues) => void;
 };
@@ -66,6 +68,7 @@ type HomeFilterProps = {
 export default function HomeFilter({
   mobileTriggerPosition = "bottom",
   hideMobileTrigger = false,
+  hideStatus = false,
   onSearch: onSearchOverride,
 }: HomeFilterProps) {
   const [properties, setProperties] = useState<Property[]>([]);
@@ -145,6 +148,14 @@ export default function HomeFilter({
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [properties]);
 
+  const builderSelectItems = useMemo(
+    () => [
+      { value: "__all__", label: "Todas" },
+      ...builderOptions.map((name) => ({ value: name, label: name })),
+    ],
+    [builderOptions]
+  );
+
   // Labels para barra compacta (mobile)
   const typeLabel = useMemo(() => {
     const v = form.watch("type");
@@ -219,7 +230,8 @@ export default function HomeFilter({
       params.set("status", values.status);
     if (values.tag && values.tag.length)
       params.set("tag", values.tag.join(","));
-    if (values.builder) params.set("builder", values.builder);
+    if (values.builder && values.builder !== "__all__")
+      params.set("builder", values.builder);
     router.push(`/imoveis?${params.toString()}`);
     }
   }
@@ -235,7 +247,7 @@ export default function HomeFilter({
           </h2>
         </div>
         <Form {...form}>
-          <form className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-8 items-end">
+          <form className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-8 items-end [&>*]:min-w-0">
             {/* Localização */}
             <FormField
               control={form.control}
@@ -246,7 +258,7 @@ export default function HomeFilter({
                     Localização
                   </span>
                   <FormControl>
-                    <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
                       <MapPin
                         className="h-4 w-4 text-black/15 shrink-0"
                         strokeWidth={2.25}
@@ -256,7 +268,7 @@ export default function HomeFilter({
                         onValueChange={(val) =>
                           field.onChange(val === "__all__" ? undefined : val)
                         }
-                        className="w-full text-black/80 border-0 bg-transparent px-0"
+                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
                         menuClassName="w-[340px]"
                       >
                         <SelectTrigger className="w-full">
@@ -286,31 +298,23 @@ export default function HomeFilter({
                     Construtora
                   </span>
                   <FormControl>
-                    <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
                       <Home
                         className="text-black/15 shrink-0"
                         strokeWidth={2.25}
                         size={18}
                       />
                       <Select
-                        value={field.value ?? undefined}
+                        value={field.value ?? "__all__"}
                         onValueChange={field.onChange}
-                        disabled={builderOptions.length === 0}
-                        className="w-full text-black/80 border-0 bg-transparent px-0"
+                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
+                        items={builderSelectItems}
+                        placeholder="Construtora"
+                        menuMinWidth={200}
                       >
-                        <SelectTrigger
-                          className="w-full"
-                          disabled={builderOptions.length === 0}
-                        >
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Construtora" />
                         </SelectTrigger>
-                        <SelectContent>
-                          {builderOptions.map((name) => (
-                            <SelectItem key={name} value={name}>
-                              {name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
                       </Select>
                     </div>
                   </FormControl>
@@ -327,23 +331,22 @@ export default function HomeFilter({
                     Tipo de Transação
                   </span>
                   <FormControl>
-                    <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <ArrowLeftRight className="h-4 w-4 text-black/15" />
+                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                      <ArrowLeftRight className="h-4 w-4 shrink-0 text-black/15" />
                       <Select
                         value={field.value ?? defaultMode}
                         onValueChange={field.onChange}
-                        className="w-full text-black/80 border-0 bg-transparent px-0"
+                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
+                        menuMinWidth={220}
+                        items={transactionTypes.map((opt) => ({
+                          value: opt.value,
+                          label: opt.label,
+                        }))}
+                        placeholder="Transação"
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Transação" />
                         </SelectTrigger>
-                        <SelectContent>
-                          {transactionTypes.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
                       </Select>
                     </div>
                   </FormControl>
@@ -360,14 +363,14 @@ export default function HomeFilter({
                     Tipo
                   </span>
                   <FormControl>
-                    <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <Home className="h-4 w-4 text-black/15" />
+                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                      <Home className="h-4 w-4 shrink-0 text-black/15" />
                       <Select
                         value={field.value ?? undefined}
                         onValueChange={(val) =>
                           field.onChange(val === "__all__" ? undefined : val)
                         }
-                        className="w-full text-black/80 border-0 bg-transparent px-0"
+                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
                         menuClassName="w-[184px]"
                       >
                         <SelectTrigger className="w-full">
@@ -398,14 +401,14 @@ export default function HomeFilter({
                     Quartos
                   </span>
                   <FormControl>
-                    <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <Bed className="h-4 w-4 text-black/15" />
+                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                      <Bed className="h-4 w-4 shrink-0 text-black/15" />
                       <Select
                         value={field.value ?? undefined}
                         onValueChange={(val) =>
                           field.onChange(val === "__all__" ? undefined : val)
                         }
-                        className="w-full text-black/80 border-0 bg-transparent px-0"
+                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Quartos" />
@@ -434,12 +437,12 @@ export default function HomeFilter({
                     Preço
                   </span>
                   <FormControl>
-                    <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <Tag className="h-4 w-4 text-black/15" />
+                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                      <Tag className="h-4 w-4 shrink-0 text-black/15" />
                       <Select
                         value={field.value ?? "__all__"}
                         onValueChange={field.onChange}
-                        className="w-full text-black/80 border-0 bg-transparent px-0"
+                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
                         menuClassName="w-[280px]"
                       >
                         <SelectTrigger className="w-full">
@@ -464,45 +467,49 @@ export default function HomeFilter({
                 </FormItem>
               )}
             />
-            {/* Status */}
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
-                    Status
-                  </span>
-                  <FormControl>
-                    <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <Tag className="h-4 w-4 text-black/30" />
-                      <Select
-                        value={field.value ?? "__all__"}
-                        onValueChange={field.onChange}
-                        className="w-full text-black/80 border-0 bg-transparent px-0"
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__all__">Todos</SelectItem>
-                          <SelectItem value="na-planta">Na planta</SelectItem>
-                          <SelectItem value="pronto">Pronto</SelectItem>
-                          <SelectItem value="mobiliado">Mobiliado</SelectItem>
-                          <SelectItem value="sem-mobilia">
-                            Sem mobília
-                          </SelectItem>
-                          <SelectItem value="reformado">Reformado</SelectItem>
-                          <SelectItem value="para-reformar">
-                            Para reformar
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+            {!hideStatus ? (
+              <>
+                {/* Status */}
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                        Status
+                      </span>
+                      <FormControl>
+                        <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                          <Tag className="h-4 w-4 shrink-0 text-black/30" />
+                          <Select
+                            value={field.value ?? "__all__"}
+                            onValueChange={field.onChange}
+                            className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__all__">Todos</SelectItem>
+                              <SelectItem value="na-planta">Na planta</SelectItem>
+                              <SelectItem value="pronto">Pronto</SelectItem>
+                              <SelectItem value="mobiliado">Mobiliado</SelectItem>
+                              <SelectItem value="sem-mobilia">
+                                Sem mobília
+                              </SelectItem>
+                              <SelectItem value="reformado">Reformado</SelectItem>
+                              <SelectItem value="para-reformar">
+                                Para reformar
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </>
+            ) : null}
             {/* Tags (multi-select compacto: mostra 1 + contador; seleção/deseleção no menu) */}
             <FormField
               control={form.control}
@@ -703,7 +710,7 @@ export default function HomeFilter({
                             Localização
                           </span>
                           <FormControl>
-                            <div className="flex h-11 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
+                            <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
                               <MapPin
                                 className="h-4 w-4 text-white/70 shrink-0"
                                 strokeWidth={2.25}
@@ -715,7 +722,7 @@ export default function HomeFilter({
                                     val === "__all__" ? undefined : val
                                   )
                                 }
-                                className="w-full text-white border-0 bg-transparent px-0"
+                                className="min-w-0 flex-1 text-white border-0 bg-transparent px-0"
                                 placeholderClassName="text-white/70"
                                 valueClassName="text-white"
                                 caretClassName="text-white/60"
@@ -751,35 +758,27 @@ export default function HomeFilter({
                             Construtora
                           </span>
                           <FormControl>
-                            <div className="flex h-11 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
+                            <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
                               <Home
                                 className="text-white/70 shrink-0"
                                 strokeWidth={2.25}
                                 size={18}
                               />
                               <Select
-                                value={field.value ?? undefined}
+                                value={field.value ?? "__all__"}
                                 onValueChange={field.onChange}
-                                disabled={builderOptions.length === 0}
-                                className="w-full text-white border-0 bg-transparent px-0"
+                                className="min-w-0 flex-1 text-white border-0 bg-transparent px-0"
                                 placeholderClassName="text-white/70"
                                 valueClassName="text-white"
                                 caretClassName="text-white/60"
-                                menuClassName="z-[95] w-full bg-white"
+                                menuClassName="z-[95] w-[min(100vw-2rem,320px)] bg-white"
+                                items={builderSelectItems}
+                                placeholder="Construtora"
+                                menuMinWidth={200}
                               >
-                                <SelectTrigger
-                                  className="w-full"
-                                  disabled={builderOptions.length === 0}
-                                >
+                                <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Construtora" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                  {builderOptions.map((name) => (
-                                    <SelectItem key={name} value={name}>
-                                      {name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
                               </Select>
                             </div>
                           </FormControl>
@@ -796,27 +795,26 @@ export default function HomeFilter({
                             Tipo de Transação
                           </span>
                           <FormControl>
-                            <div className="flex h-11 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
-                              <ArrowLeftRight className="h-4 w-4 text-white/70" />
+                            <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
+                              <ArrowLeftRight className="h-4 w-4 shrink-0 text-white/70" />
                               <Select
                                 value={field.value ?? defaultMode}
                                 onValueChange={field.onChange}
-                                className="w-full text-white border-0 bg-transparent px-0"
+                                className="min-w-0 flex-1 text-white border-0 bg-transparent px-0"
                                 placeholderClassName="text-white/70"
                                 valueClassName="text-white"
                                 caretClassName="text-white/60"
-                                menuClassName="z-[95] w-full bg-white"
+                                menuClassName="z-[95] w-[min(100vw-2rem,280px)] bg-white"
+                                menuMinWidth={220}
+                                items={transactionTypes.map((opt) => ({
+                                  value: opt.value,
+                                  label: opt.label,
+                                }))}
+                                placeholder="Transação"
                               >
                                 <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Transação" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                  {transactionTypes.map((opt) => (
-                                    <SelectItem key={opt.value} value={opt.value}>
-                                      {opt.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
                               </Select>
                             </div>
                           </FormControl>
@@ -833,8 +831,8 @@ export default function HomeFilter({
                             Tipo
                           </span>
                           <FormControl>
-                            <div className="flex h-11 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
-                              <Home className="h-4 w-4 text-white/70" />
+                            <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
+                              <Home className="h-4 w-4 shrink-0 text-white/70" />
                               <Select
                                 value={field.value ?? undefined}
                                 onValueChange={(val) =>
@@ -842,7 +840,7 @@ export default function HomeFilter({
                                     val === "__all__" ? undefined : val
                                   )
                                 }
-                                className="w-full text-white border-0 bg-transparent px-0"
+                                className="min-w-0 flex-1 text-white border-0 bg-transparent px-0"
                                 placeholderClassName="text-white/70"
                                 valueClassName="text-white"
                                 caretClassName="text-white/60"
@@ -880,8 +878,8 @@ export default function HomeFilter({
                             Quartos
                           </span>
                           <FormControl>
-                            <div className="flex h-11 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
-                              <Bed className="h-4 w-4 text-white/70" />
+                            <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
+                              <Bed className="h-4 w-4 shrink-0 text-white/70" />
                               <Select
                                 value={field.value ?? undefined}
                                 onValueChange={(val) =>
@@ -889,7 +887,7 @@ export default function HomeFilter({
                                     val === "__all__" ? undefined : val
                                   )
                                 }
-                                className="w-full text-white border-0 bg-transparent px-0"
+                                className="min-w-0 flex-1 text-white border-0 bg-transparent px-0"
                                 placeholderClassName="text-white/70"
                                 valueClassName="text-white"
                                 caretClassName="text-white/60"
@@ -1094,54 +1092,55 @@ export default function HomeFilter({
                       </div>
                     </div>
 
-                    {/* Status */}
-                    <FormField
-                      control={form.control}
-                      name="status"
-                      render={({ field }) => (
-                        <FormItem>
-                          <span className="block px-1 text-[10px] font-medium text-white">
-                            Status
-                          </span>
-                          <FormControl>
-                            <div className="flex h-11 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
-                              <Tag className="h-4 w-4 text-white/70" />
-                              <Select
-                                value={field.value ?? "__all__"}
-                                onValueChange={field.onChange}
-                                className="w-full text-white border-0 bg-transparent px-0"
-                                placeholderClassName="text-white/70"
-                                caretClassName="text-white/60"
-                                menuClassName="z-[95] w-full bg-white"
-                              >
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="__all__">Todos</SelectItem>
-                                  <SelectItem value="na-planta">
-                                    Na planta
-                                  </SelectItem>
-                                  <SelectItem value="pronto">Pronto</SelectItem>
-                                  <SelectItem value="mobiliado">
-                                    Mobiliado
-                                  </SelectItem>
-                                  <SelectItem value="sem-mobilia">
-                                    Sem mobília
-                                  </SelectItem>
-                                  <SelectItem value="reformado">
-                                    Reformado
-                                  </SelectItem>
-                                  <SelectItem value="para-reformar">
-                                    Para reformar
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
+                    {!hideStatus ? (
+                      <FormField
+                        control={form.control}
+                        name="status"
+                        render={({ field }) => (
+                          <FormItem>
+                            <span className="block px-1 text-[10px] font-medium text-white">
+                              Status
+                            </span>
+                            <FormControl>
+                              <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
+                                <Tag className="h-4 w-4 text-white/70" />
+                                <Select
+                                  value={field.value ?? "__all__"}
+                                  onValueChange={field.onChange}
+                                  className="min-w-0 flex-1 text-white border-0 bg-transparent px-0"
+                                  placeholderClassName="text-white/70"
+                                  caretClassName="text-white/60"
+                                  menuClassName="z-[95] w-full bg-white"
+                                >
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Selecione" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__all__">Todos</SelectItem>
+                                    <SelectItem value="na-planta">
+                                      Na planta
+                                    </SelectItem>
+                                    <SelectItem value="pronto">Pronto</SelectItem>
+                                    <SelectItem value="mobiliado">
+                                      Mobiliado
+                                    </SelectItem>
+                                    <SelectItem value="sem-mobilia">
+                                      Sem mobília
+                                    </SelectItem>
+                                    <SelectItem value="reformado">
+                                      Reformado
+                                    </SelectItem>
+                                    <SelectItem value="para-reformar">
+                                      Para reformar
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    ) : null}
                     {/* Tags (multi-select) */}
                     <FormField
                       control={form.control}

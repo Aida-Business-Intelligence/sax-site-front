@@ -25,10 +25,17 @@ export default function Header({ logoSrc = null }: HeaderProps) {
   ];
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);
+  const isMapaPage = pathname?.startsWith("/imoveis/mapa") ?? false;
 
   return (
     <>
-      <header className="md:fixed md:inset-x-0 md:top-0 z-50 pointer-events-none">
+      <header
+        className={
+          isMapaPage
+            ? "md:fixed md:inset-x-0 md:top-0 z-50 pointer-events-none md:bg-white md:shadow-[0_1px_0_0_rgb(0_0_0/0.06)] dark:md:bg-zinc-950"
+            : "md:fixed md:inset-x-0 md:top-0 z-50 pointer-events-none"
+        }
+      >
         {/* Mobile: filtro no /imoveis/mapa (esquerda) */}
         {usePathname()?.startsWith("/imoveis/mapa") ? (
           <div className="fixed left-4 top-4 z-50 md:hidden pointer-events-auto">

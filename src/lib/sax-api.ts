@@ -85,7 +85,11 @@ export async function fetchWarehouses(): Promise<WarehouseDto[]> {
   const base = getSaxApiBase();
   if (!base) return [];
   try {
-    const res = await fetch(`${base}/api/warehouse/list`, { next: { revalidate: 60 } });
+    const init: RequestInit =
+      typeof window === "undefined"
+        ? { next: { revalidate: 60 } }
+        : { cache: "no-store" };
+    const res = await fetch(`${base}/api/warehouse/list`, init);
     if (!res.ok) return [];
     const data = await res.json();
     return Array.isArray(data) ? data : data?.data ?? [];
@@ -104,7 +108,7 @@ const DEFAULT_TRANSACTION_TYPES: TransactionTypeOption[] = [
   { value: "crowdfunding", label: "Crowdfunding" },
 ];
 
-/** Configuração do site (banners, logo, favicon, menu, hero, parceiros, footer, tipos de transação). */
+/** Configuração do site (banners, logo, favicon, menu, hero, parceiros, footer, tipos de transação, projetos exclusivos, imóveis). */
 export async function fetchSiteConfig(): Promise<{
   featuredPropertyIds: string[];
   logoUrl: string | null;
@@ -115,6 +119,9 @@ export async function fetchSiteConfig(): Promise<{
   aboutContent: Record<string, unknown> | null;
   footerContent: Record<string, unknown> | null;
   transactionTypes: TransactionTypeOption[];
+  exclusiveProjectsContent: Record<string, unknown> | null;
+  imoveisContent: Record<string, unknown> | null;
+  proprietariosContent: Record<string, unknown> | null;
 }> {
   const base = getSaxApiBase();
   const empty = {
@@ -127,6 +134,9 @@ export async function fetchSiteConfig(): Promise<{
     aboutContent: null as Record<string, unknown> | null,
     footerContent: null as Record<string, unknown> | null,
     transactionTypes: DEFAULT_TRANSACTION_TYPES,
+    exclusiveProjectsContent: null as Record<string, unknown> | null,
+    imoveisContent: null as Record<string, unknown> | null,
+    proprietariosContent: null as Record<string, unknown> | null,
   };
   if (!base) return empty;
   try {
@@ -140,6 +150,19 @@ export async function fetchSiteConfig(): Promise<{
     const transactionTypes = Array.isArray(data?.transactionTypes) && data.transactionTypes.length > 0
       ? data.transactionTypes.filter((t: unknown) => t && typeof t === "object" && typeof (t as TransactionTypeOption).value === "string")
       : DEFAULT_TRANSACTION_TYPES;
+    const ex =
+      data?.exclusiveProjectsContent != null && typeof data.exclusiveProjectsContent === "object"
+        ? (data.exclusiveProjectsContent as Record<string, unknown>)
+        : null;
+    const imoveisContent =
+      data?.imoveisContent != null && typeof data.imoveisContent === "object"
+        ? (data.imoveisContent as Record<string, unknown>)
+        : null;
+    const proprietariosContent =
+      data?.proprietariosContent != null &&
+      typeof data.proprietariosContent === "object"
+        ? (data.proprietariosContent as Record<string, unknown>)
+        : null;
     return {
       featuredPropertyIds: ids,
       logoUrl: data?.logoUrl ?? null,
@@ -150,6 +173,9 @@ export async function fetchSiteConfig(): Promise<{
       aboutContent: data?.aboutContent ?? null,
       footerContent: data?.footerContent ?? null,
       transactionTypes,
+      exclusiveProjectsContent: ex,
+      imoveisContent,
+      proprietariosContent,
     };
   } catch {
     return empty;

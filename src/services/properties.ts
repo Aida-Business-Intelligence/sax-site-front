@@ -50,6 +50,12 @@ export function mapApiPropertyToProperty(p: Record<string, unknown>): Property {
       city: String(addr.city ?? ""),
       state: String(addr.state ?? ""),
       street: addr.street != null ? String(addr.street) : undefined,
+      number:
+        addr.number != null
+          ? String(addr.number)
+          : addr.numero != null
+            ? String(addr.numero)
+            : undefined,
       zip: addr.zip != null ? String(addr.zip) : undefined,
       lat: addr.lat != null ? Number(addr.lat) : undefined,
       lng: addr.lng != null ? Number(addr.lng) : undefined,
@@ -576,6 +582,9 @@ export async function getSiteConfig(): Promise<{
   aboutContent: Record<string, unknown> | null;
   footerContent: Record<string, unknown> | null;
   transactionTypes: TransactionTypeOption[];
+  exclusiveProjectsContent: Record<string, unknown> | null;
+  imoveisContent: Record<string, unknown> | null;
+  proprietariosContent: Record<string, unknown> | null;
 }> {
   const fallback = {
     featuredPropertyIds: [] as string[],
@@ -587,6 +596,9 @@ export async function getSiteConfig(): Promise<{
     aboutContent: null as Record<string, unknown> | null,
     footerContent: null as Record<string, unknown> | null,
     transactionTypes: DEFAULT_TRANSACTION_TYPES,
+    exclusiveProjectsContent: null as Record<string, unknown> | null,
+    imoveisContent: null as Record<string, unknown> | null,
+    proprietariosContent: null as Record<string, unknown> | null,
   };
   if (hasSaxApi()) {
     try {
@@ -610,6 +622,19 @@ export async function getProperties(): Promise<Property[]> {
     }
   }
   return properties;
+}
+
+/** Só dados da API; sem lista mock (mapa da home deve mostrar só imóveis cadastrados). */
+export async function getPropertiesFromApiOnly(): Promise<Property[]> {
+  if (!hasSaxApi()) return [];
+  try {
+    const list = await fetchPropertiesApi();
+    return list.map((p) =>
+      mapApiPropertyToProperty(p as Record<string, unknown>)
+    );
+  } catch {
+    return [];
+  }
 }
 
 export async function getPropertyBySlug(

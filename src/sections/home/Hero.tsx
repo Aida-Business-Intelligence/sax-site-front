@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useEffect, useState, useMemo } from "react";
 import Map from "@/components/map/Map";
 import { siteMapStyle } from "@/lib/mapbox";
-import { getProperties } from "@/services/properties";
+import { getPropertiesFromApiOnly } from "@/services/properties";
 import HomeFilter from "@/sections/home/HomeFilter";
 import { trackWhatsappClick } from "@/lib/tracking";
 
@@ -80,20 +80,18 @@ export default function Hero({ heroContent = null }: HeroProps) {
 
   useEffect(() => {
     let mounted = true;
-    getProperties().then((props) => {
+    getPropertiesFromApiOnly().then((props) => {
       if (!mounted) return;
       const pts =
         props
-          ?.filter(
-            (p) =>
-              typeof p.address?.lat === "number" &&
-              typeof p.address?.lng === "number"
-          )
-          .map((p) => ({
-            id: p.id,
-            lng: p.address.lng as number,
-            lat: p.address.lat as number,
-          })) ?? [];
+          ?.map((p) => {
+            const lat = Number(p.address?.lat);
+            const lng = Number(p.address?.lng);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+            return { id: p.id, lng, lat };
+          })
+          .filter((m): m is { id: string; lng: number; lat: number } => m != null) ??
+        [];
       setMarkers(pts);
     });
     return () => {
