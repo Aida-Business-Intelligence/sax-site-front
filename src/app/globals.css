@@ -143,3 +143,17 @@
 .logo-rail:hover .logo-track {
   animation-play-state: paused;
 }
+
+/* /imoveis/mapa: sem máscara branca sobre o mapa atrás do header */
+html.mapa-page-no-header-fade .header-fade-cap,
+html.mapa-page-no-header-fade .header-fade-gradient {
+  display: none !important;
+}
+
+/* /imoveis/mapa desktop: controles de zoom abaixo do header, filtros e “glass” */
+@media (min-width: 768px) {
+  .mapa-map-root .mapboxgl-ctrl-top-right {
+    /* abaixo da barra de filtros; header alinhado à home */
+    top: 16rem;
+  }
+}

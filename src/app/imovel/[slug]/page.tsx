@@ -1,5 +1,6 @@
 import { buildMetadata } from "@/lib/seo";
-import { getPropertyBySlug } from "@/services/properties";
+import { getPropertyBySlug, getSiteConfig } from "@/services/properties";
+import { PropertyExpertWhatsAppButton } from "@/components/imovel/PropertyExpertWhatsAppButton";
 import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
 import { JsonLdProperty } from "@/components/seo/JsonLdProperty";
 import { PropertyViewAnalytics } from "@/components/PropertyViewAnalytics";
@@ -59,6 +60,11 @@ export async function generateMetadata({ params }: Props) {
   });
 }
 
+function buildWhatsappHref(digitsRaw: unknown): string | null {
+  const digits = String(digitsRaw ?? "").replace(/\D/g, "");
+  return digits ? `https://wa.me/${digits}` : null;
+}
+
 function ImovelViewTracker({ slug }: { slug: string }) {
   if (typeof window !== "undefined") {
     trackImovelView({ slug });
@@ -69,21 +75,31 @@ function ImovelViewTracker({ slug }: { slug: string }) {
 
 export default async function ImovelPage({ params }: Props) {
   const { slug } = await params;
-  const property = await getPropertyBySlug(slug);
+  const [property, siteConfig] = await Promise.all([
+    getPropertyBySlug(slug),
+    getSiteConfig(),
+  ]);
   if (!property) {
     return (
-      <div className="mx-auto max-w-3xl px-4 pt-20 pb-14 sm:px-6">
-        <Link
-          href="/imoveis"
-          className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
-        >
-          <ArrowLeft className="size-4" />
-          Voltar
-        </Link>
-        <h1 className="mb-2 text-2xl font-semibold">Imóvel não encontrado</h1>
-        <p className="text-zinc-600 dark:text-zinc-400">
-          Verifique o endereço e tente novamente.
-        </p>
+      <div className="relative min-h-screen">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-0 -z-10 bg-no-repeat bg-cover bg-center opacity-[0.03]"
+          style={{ backgroundImage: "url('/assets/images/home/bc1.png')" }}
+        />
+        <div className="mx-auto max-w-3xl px-4 pt-8 pb-14 sm:px-6 md:pt-10">
+          <Link
+            href="/imoveis"
+            className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+          >
+            <ArrowLeft className="size-4" />
+            Voltar
+          </Link>
+          <h1 className="mb-2 text-2xl font-semibold">Imóvel não encontrado</h1>
+          <p className="text-zinc-600 dark:text-zinc-400">
+            Verifique o endereço e tente novamente.
+          </p>
+        </div>
       </div>
     );
   }
@@ -93,19 +109,53 @@ export default async function ImovelPage({ params }: Props) {
     { label: property.title, href: `/imovel/${property.slug}` },
   ];
 
+  const mapLat = property.address.lat;
+  const mapLng = property.address.lng;
+  const hasMapCoords =
+    mapLat != null &&
+    mapLng != null &&
+    Number.isFinite(Number(mapLat)) &&
+    Number.isFinite(Number(mapLng));
+
+  const im = siteConfig.imoveisContent;
+  const waHref = buildWhatsappHref(im?.whatsappNumber);
+  const waButtonText =
+    typeof im?.whatsappButtonText === "string" && im.whatsappButtonText.trim() !== ""
+      ? im.whatsappButtonText
+      : "Falar no WhatsApp";
+
   return (
-    <div className="mx-auto max-w-7xl px-4 pt-20 pb-14 sm:px-6">
+    <div className="relative min-h-screen">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 -z-10 bg-no-repeat bg-cover bg-center opacity-[0.03]"
+        style={{ backgroundImage: "url('/assets/images/home/bc1.png')" }}
+      />
+      <div className="mx-auto max-w-7xl px-4 pt-8 pb-10 sm:px-6 md:pt-10 md:pb-12">
       <JsonLdProperty property={property} />
       <PropertyViewAnalytics propertySlug={property.slug} />
       <Breadcrumbs items={breadcrumbs} />
       <ImovelViewTracker slug={property.slug} />
-      <Link
-        href="/imoveis"
-        className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
-      >
-        <ArrowLeft className="size-4" />
-        Voltar
-      </Link>
+      <div className="mb-8 flex min-w-0 items-center justify-between gap-3">
+        <Link
+          href="/imoveis"
+          className="inline-flex min-w-0 items-center gap-2 text-sm font-medium text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+        >
+          <ArrowLeft className="size-4 shrink-0" />
+          Voltar
+        </Link>
+        {waHref ? (
+          <div className="md:hidden">
+            <PropertyExpertWhatsAppButton
+              href={waHref}
+              compact
+              trackingSource="imovel-detail-header"
+            >
+              WhatsApp
+            </PropertyExpertWhatsAppButton>
+          </div>
+        ) : null}
+      </div>
       <div className="grid gap-10 lg:grid-cols-2">
         <div className="space-y-6">
           <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl bg-zinc-200/60 dark:bg-zinc-800/40">
@@ -130,9 +180,16 @@ export default async function ImovelPage({ params }: Props) {
               </p>
             )}
             <h1 className="text-2xl font-semibold">{property.title}</h1>
-            {(property.address.street || property.address.neighborhood) && (
+            {(property.address.street ||
+              property.address.number ||
+              property.address.neighborhood) && (
               <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                {[property.address.street, property.address.neighborhood]
+                {[
+                  [property.address.street, property.address.number]
+                    .filter(Boolean)
+                    .join(", "),
+                  property.address.neighborhood,
+                ]
                   .filter(Boolean)
                   .join(" — ")}
                 {property.address.city && `, ${property.address.city}`}
@@ -144,8 +201,9 @@ export default async function ImovelPage({ params }: Props) {
               {property.description}
             </p>
 
+            <div className="mt-6 flex flex-col gap-4 sm:gap-5">
             {/* Valores por tipo de transação */}
-            <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/30">
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/30">
               <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
                 <Sparkles className="size-4" />
                 Valores
@@ -352,10 +410,11 @@ export default async function ImovelPage({ params }: Props) {
                 )}
               </ul>
             </div>
+            </div>
 
             {/* Tags do imóvel */}
             {property.tagImovel && property.tagImovel.length > 0 && (
-              <div className="flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap gap-2 sm:mt-5">
                 {property.tagImovel.map((tag) => (
                   <span
                     key={tag}
@@ -370,34 +429,54 @@ export default async function ImovelPage({ params }: Props) {
         </div>
         <div className="space-y-6">
           <Map
-            center={{
-              lng: property.address.lng ?? -46.651,
-              lat: property.address.lat ?? -23.564,
-            }}
+            center={
+              hasMapCoords
+                ? { lng: Number(mapLng), lat: Number(mapLat) }
+                : { lng: -51.5, lat: -14.2 }
+            }
+            zoom={hasMapCoords ? 16 : 4}
+            view3D
+            markerStyle="neon-blue"
             markers={
-              property.address.lat && property.address.lng
+              hasMapCoords
                 ? [
                     {
                       id: property.id,
-                      lng: property.address.lng,
-                      lat: property.address.lat,
+                      lng: Number(mapLng),
+                      lat: Number(mapLat),
                     },
                   ]
                 : []
             }
-            className="border border-zinc-200 dark:border-zinc-800"
+            className="h-[320px] w-full rounded-2xl border border-zinc-200 dark:border-zinc-800"
           />
-          <div className="rounded-2xl border border-zinc-200 p-6 dark:border-zinc-800">
-            <h2 className="mb-4 text-lg font-semibold">
+          <div className="rounded-2xl border border-zinc-200 p-5 pb-6 dark:border-zinc-800 sm:p-6 md:mb-0">
+            <h2 className="mb-3 text-lg font-semibold md:mb-4">
               Fale com um especialista
             </h2>
-            {/* Form será renderizado em /contato e também podemos embutir aqui depois */}
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              Em breve adicionaremos o formulário neste detalhe também.
-            </p>
+            {waHref ? (
+              <>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  Tire dúvidas sobre este imóvel pelo WhatsApp.
+                </p>
+                <PropertyExpertWhatsAppButton
+                  href={waHref}
+                  trackingSource="imovel-detail-footer"
+                >
+                  {waButtonText}
+                </PropertyExpertWhatsAppButton>
+              </>
+            ) : (
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                Em breve adicionaremos o formulário neste detalhe também. O botão do
+                WhatsApp aparece quando o número for configurado na gestão do site
+                (seção Imóveis).
+              </p>
+            )}
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }

@@ -12,8 +12,9 @@ type Props = {
  */
 export function JsonLdProperty({ property }: Props) {
   const addr = property.address;
+  const streetWithNumber = [addr.street, addr.number].filter(Boolean).join(", ");
   const addressLine = [
-    addr.street,
+    streetWithNumber,
     addr.neighborhood,
     addr.city,
     addr.state,
@@ -46,7 +47,7 @@ export function JsonLdProperty({ property }: Props) {
           addressLocality: addr.city,
           addressRegion: addr.state,
           addressNeighborhood: addr.neighborhood,
-          streetAddress: addr.street,
+          streetAddress: streetWithNumber || addr.street,
           postalCode: addr.zip,
           addressCountry: "BR",
         },

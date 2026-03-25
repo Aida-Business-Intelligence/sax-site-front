@@ -1,6 +1,8 @@
- "use client";
-import React, { useEffect, useRef, useState, ReactNode, ReactElement } from "react";
+"use client";
+import React, { useCallback, useEffect, useRef, useState, ReactNode, ReactElement } from "react";
 import { createPortal } from "react-dom";
+
+export type SelectOptionItem = { value: string; label: ReactNode };
 
 type SelectProps = {
   value?: string;
@@ -12,12 +14,32 @@ type SelectProps = {
   placeholderClassName?: string;
   caretClassName?: string;
   valueClassName?: string;
+  /** Texto do placeholder quando não há valor (útil com `items`). */
+  placeholder?: string;
+  /** Lista explícita de opções (evita depender só da extração dos children). */
+  items?: SelectOptionItem[];
+  /** Largura mínima do painel do dropdown (px), além da largura do gatilho. */
+  menuMinWidth?: number;
 };
 
-export function Select({ value, onValueChange, disabled, children, className, menuClassName, placeholderClassName, caretClassName, valueClassName }: SelectProps) {
-  // Extract options and placeholder from children structure (no memo to satisfy React Compiler lints)
+const DEFAULT_MENU_MIN_WIDTH = 220;
+
+export function Select({
+  value,
+  onValueChange,
+  disabled,
+  children,
+  className,
+  menuClassName,
+  placeholderClassName,
+  caretClassName,
+  valueClassName,
+  placeholder: placeholderProp,
+  items: itemsProp,
+  menuMinWidth = DEFAULT_MENU_MIN_WIDTH,
+}: SelectProps) {
   const extract = (nodes: ReactNode | undefined) => {
-    const opts: { value: string; label: ReactNode }[] = [];
+    const opts: SelectOptionItem[] = [];
     let ph: string | undefined;
     const scan = (ns: ReactNode | undefined) => {
       React.Children.forEach(ns, (child) => {
@@ -43,12 +65,19 @@ export function Select({ value, onValueChange, disabled, children, className, me
     scan(nodes);
     return { options: opts, placeholder: ph };
   };
-  const { options, placeholder } = extract(children);
+  const extracted = extract(children);
+  const options = itemsProp ?? extracted.options;
+  const placeholder = placeholderProp ?? extracted.placeholder;
 
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const [menuRect, setMenuRect] = useState<{ left: number; top: number; width: number } | null>(null);
+  const [menuRect, setMenuRect] = useState<{
+    left: number;
+    top: number;
+    width: number;
+  } | null>(null);
+
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
       if (!wrapperRef.current) return;
@@ -62,15 +91,19 @@ export function Select({ value, onValueChange, disabled, children, className, me
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
-  // Position the menu using a portal to avoid stacking-context/overflow issues
+  const measureAndSetMenuRect = useCallback(() => {
+    if (!wrapperRef.current) return;
+    const rect = wrapperRef.current.getBoundingClientRect();
+    const w = Math.max(rect.width, menuMinWidth);
+    setMenuRect({ left: rect.left, top: rect.bottom + 8, width: w });
+  }, [menuMinWidth]);
+
   useEffect(() => {
     function updatePosition() {
       if (!open || !wrapperRef.current) return;
-      const rect = wrapperRef.current.getBoundingClientRect();
-      setMenuRect({ left: rect.left, top: rect.bottom + 8, width: rect.width });
+      measureAndSetMenuRect();
     }
     if (open) {
-      updatePosition();
       window.addEventListener("scroll", updatePosition, true);
       window.addEventListener("resize", updatePosition);
     }
@@ -78,21 +111,38 @@ export function Select({ value, onValueChange, disabled, children, className, me
       window.removeEventListener("scroll", updatePosition, true);
       window.removeEventListener("resize", updatePosition);
     };
-  }, [open]);
+  }, [open, measureAndSetMenuRect]);
 
   const selected = options.find((o) => o.value === value);
 
   return (
-    <div ref={wrapperRef} className={["relative", className].filter(Boolean).join(" ")}>
+    <div ref={wrapperRef} className={["relative min-w-0", className].filter(Boolean).join(" ")}>
       <button
         type="button"
         disabled={disabled}
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between rounded-md px-0 py-0 text-left outline-none"
+        onClick={() => {
+          setOpen((prev) => {
+            const next = !prev;
+            if (!next) {
+              setMenuRect(null);
+            } else {
+              measureAndSetMenuRect();
+            }
+            return next;
+          });
+        }}
+        className="flex w-full min-w-0 items-center justify-between gap-1 rounded-md px-0 py-0 text-left outline-none"
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span className={["block w-full truncate", !selected ? (placeholderClassName ?? "text-black/40") : (valueClassName ?? "")].join(" ")}>
+        <span
+          className={[
+            "min-w-0 flex-1 truncate text-left",
+            !selected ? placeholderClassName ?? "text-black/40" : valueClassName ?? "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
           {selected ? selected.label : placeholder ?? "Selecionar"}
         </span>
         <svg
@@ -100,7 +150,7 @@ export function Select({ value, onValueChange, disabled, children, className, me
           width="16"
           height="16"
           viewBox="0 0 24 24"
-          className={["ml-2", caretClassName ?? "text-black/40"].join(" ")}
+          className={["shrink-0", caretClassName ?? "text-black/40"].filter(Boolean).join(" ")}
         >
           <path fill="currentColor" d="M7 10l5 5 5-5z" />
         </svg>
@@ -108,43 +158,44 @@ export function Select({ value, onValueChange, disabled, children, className, me
 
       {open && menuRect
         ? createPortal(
-        <div
+            <div
               ref={menuRef}
-          role="listbox"
-          className={[
-                "z-9999 max-h-60 overflow-auto rounded-lg border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900",
+              role="listbox"
+              className={[
+                "max-h-60 overflow-y-auto overflow-x-hidden rounded-lg border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900",
                 menuClassName ? menuClassName : "",
-          ].join(" ")}
+              ].join(" ")}
               style={{
                 position: "fixed",
                 left: `${menuRect.left}px`,
                 top: `${menuRect.top}px`,
                 width: menuClassName ? undefined : `${menuRect.width}px`,
+                zIndex: 10000,
               }}
-        >
-          {options.map((opt) => {
-            const active = opt.value === value;
-            return (
-              <button
-                type="button"
-                key={opt.value}
-                role="option"
-                aria-selected={active}
-                onClick={() => {
-                  onValueChange?.(opt.value);
-                  setOpen(false);
-                }}
-                className={[
-                  "flex w-full items-center rounded-md px-3 py-2 text-left text-sm transition",
-                  active
-                    ? "bg-zinc-100 font-medium dark:bg-zinc-800"
-                    : "hover:bg-zinc-100 dark:hover:bg-zinc-800",
-                ].join(" ")}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
+            >
+              {options.map((opt) => {
+                const active = opt.value === value;
+                return (
+                  <button
+                    type="button"
+                    key={opt.value}
+                    role="option"
+                    aria-selected={active}
+                    onClick={() => {
+                      onValueChange?.(opt.value);
+                      setOpen(false);
+                    }}
+                    className={[
+                      "flex w-full min-w-0 items-center rounded-md px-3 py-2 text-left text-sm transition wrap-break-word whitespace-normal",
+                      active
+                        ? "bg-zinc-100 font-medium dark:bg-zinc-800"
+                        : "hover:bg-zinc-100 dark:hover:bg-zinc-800",
+                    ].join(" ")}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
             </div>,
             document.body
           )
@@ -175,5 +226,3 @@ export const SelectItem: React.FC<React.PropsWithChildren<{ value: string }>> = 
   return <>{children}</>;
 };
 SelectItem.displayName = "SelectItem";
-
-
