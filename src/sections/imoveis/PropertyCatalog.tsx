@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { trackEvent } from "@/lib/analytics";
 import { trackEvent as trackCrm } from "@/lib/tracking-crm";
@@ -37,9 +38,15 @@ function getParam(
   return Array.isArray(v) ? v[0] : (v as string | undefined);
 }
 
+function slugMatches(a: string, b: string): boolean {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
 function buildVerTodosHref(sectionSlug: string, filters: FormValues): string {
   const q = new URLSearchParams();
-  q.set("secao", sectionSlug);
+  const slug = String(sectionSlug ?? "").trim();
+  if (!slug) return "/imoveis";
+  q.set("secao", slug);
   const mode = filters.mode ?? "venda";
   q.set("mode", mode);
   if (filters.city && filters.city !== "__all__") q.set("city", filters.city);
@@ -123,7 +130,18 @@ function PropertyCatalog({
     defaultValues: defaultValuesFromParams,
   });
 
-  const sectionSlugFromUrl = getParam(initialSearchParams, "secao");
+  const searchParams = useSearchParams();
+  const sectionSlugFromUrl = useMemo(() => {
+    const fromUrl = searchParams.get("secao");
+    if (fromUrl != null && fromUrl !== "") {
+      try {
+        return decodeURIComponent(fromUrl).trim();
+      } catch {
+        return fromUrl.trim();
+      }
+    }
+    return getParam(initialSearchParams, "secao")?.trim() ?? "";
+  }, [searchParams, initialSearchParams]);
 
   useEffect(() => {
     if (!initialSearchParams) return;
@@ -224,13 +242,26 @@ function PropertyCatalog({
         properties: applyFilter(sectionProps, watchValues),
       })
     );
-    return withFiltered.filter(({ properties }) => properties.length > 0);
-  }, [sectionsWithProperties, watchValues, watchMode]);
+    return withFiltered.filter(({ section, properties }) => {
+      if (
+        sectionSlugFromUrl &&
+        slugMatches(section.slug, sectionSlugFromUrl)
+      ) {
+        return true;
+      }
+      return properties.length > 0;
+    });
+  }, [
+    sectionsWithProperties,
+    watchValues,
+    watchMode,
+    sectionSlugFromUrl,
+  ]);
 
   const displaySections = useMemo(() => {
     if (!sectionSlugFromUrl) return filteredSections;
-    return filteredSections.filter(
-      (s) => s.section.slug === sectionSlugFromUrl
+    return filteredSections.filter((s) =>
+      slugMatches(s.section.slug, sectionSlugFromUrl)
     );
   }, [filteredSections, sectionSlugFromUrl]);
 
@@ -249,8 +280,8 @@ function PropertyCatalog({
 
   return (
     <>
-      {/* Filtro desktop/tablet */}
-      <div className="sticky top-32 z-40 mb-20 mt-8 relative hidden md:block">
+      {/* Filtro só em telas muito grandes; tablet/iPad = fluxo mobile */}
+      <div className="sticky top-32 z-40 mb-20 mt-8 relative hidden 2xl:block">
         <Form {...form}>
           <form className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 relative z-40 [&>*]:min-w-0">
             {/* Localização */}
@@ -501,12 +532,12 @@ function PropertyCatalog({
           </form>
         </Form>
         {/* Top/Bottom fades (desktop only) */}
-        <div className="hidden md:block pointer-events-none absolute left-1/2 -translate-x-1/2 -top-40 z-30 h-60 w-screen bg-linear-to-t from-white/98 via-white/95 to-transparent dark:from-zinc-900 dark:via-zinc-900/85" />
-        <div className="hidden md:block pointer-events-none absolute left-1/2 -translate-x-1/2 -bottom-1 z-30 h-32 w-screen bg-linear-to-b from-white/98 via-white/85 to-transparent dark:from-zinc-900 dark:via-zinc-900/85" />
+        <div className="hidden 2xl:block pointer-events-none absolute left-1/2 -translate-x-1/2 -top-40 z-30 h-60 w-screen bg-linear-to-t from-white/98 via-white/95 to-transparent dark:from-zinc-900 dark:via-zinc-900/85" />
+        <div className="hidden 2xl:block pointer-events-none absolute left-1/2 -translate-x-1/2 -bottom-1 z-30 h-32 w-screen bg-linear-to-b from-white/98 via-white/85 to-transparent dark:from-zinc-900 dark:via-zinc-900/85" />
       </div>
 
       {/* Mobile: usa o mesmo HomeFilter com botão no topo */}
-      <div className="md:hidden">
+      <div className="2xl:hidden">
         <HomeFilter mobileTriggerPosition="top" />
       </div>
 
@@ -528,10 +559,10 @@ function PropertyCatalog({
         <FeaturedBanner property={bannerProperty} />
       ) : null}
       {/* Mapa (mesmo ritmo de margem do banner: mb-12 no MapTeaser) → recomendações (grid estático) → parceiros (py-14 + logo rail) */}
-      <div className="md:hidden">
+      <div className="2xl:hidden">
         <MapTeaser properties={filtered} />
       </div>
-      <div className="hidden md:block">
+      <div className="hidden 2xl:block">
         <div className="relative">
           <div className="sticky top-66 z-10">
             <MapTeaser properties={filtered} />

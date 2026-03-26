@@ -122,6 +122,7 @@ export async function fetchSiteConfig(): Promise<{
   exclusiveProjectsContent: Record<string, unknown> | null;
   imoveisContent: Record<string, unknown> | null;
   proprietariosContent: Record<string, unknown> | null;
+  huntModeEnabled: boolean;
 }> {
   const base = getSaxApiBase();
   const empty = {
@@ -137,6 +138,7 @@ export async function fetchSiteConfig(): Promise<{
     exclusiveProjectsContent: null as Record<string, unknown> | null,
     imoveisContent: null as Record<string, unknown> | null,
     proprietariosContent: null as Record<string, unknown> | null,
+    huntModeEnabled: false,
   };
   if (!base) return empty;
   try {
@@ -176,6 +178,7 @@ export async function fetchSiteConfig(): Promise<{
       exclusiveProjectsContent: ex,
       imoveisContent,
       proprietariosContent,
+      huntModeEnabled: Boolean(data?.huntModeEnabled),
     };
   } catch {
     return empty;
@@ -220,21 +223,94 @@ export async function fetchPropertyBySlug(slug: string): Promise<unknown | null>
 }
 
 /**
- * Busca imóveis recomendados para o visitante (por fingerprint).
+ * Busca imóveis recomendados para o visitante (clientVisitorId + fingerprint).
  * Retorna array no mesmo formato de fetchProperties (para mapApiPropertyToProperty).
  */
-export async function fetchRecommendations(fingerprint: string): Promise<unknown[]> {
+export async function fetchRecommendations(
+  fingerprint: string,
+  clientVisitorId?: string
+): Promise<unknown[]> {
   const base = getSaxApiBase();
-  if (!base || !fingerprint) return [];
+  if (!base) return [];
+  if (!fingerprint && !clientVisitorId?.trim()) return [];
   try {
-    const res = await fetch(
-      `${base}/api/tracking/recommendations?fingerprint=${encodeURIComponent(fingerprint)}`,
-      { cache: "no-store" }
-    );
+    const params = new URLSearchParams();
+    if (fingerprint) params.set("fingerprint", fingerprint);
+    if (clientVisitorId?.trim()) params.set("clientVisitorId", clientVisitorId.trim());
+    const res = await fetch(`${base}/api/tracking/recommendations?${params.toString()}`, {
+      cache: "no-store",
+    });
     if (!res.ok) return [];
     const data = await res.json();
     return Array.isArray(data) ? data : [];
   } catch {
     return [];
+  }
+}
+
+/** URL de asset do backend (uploads) — prefixa NEXT_PUBLIC_SAX_API_URL quando relativa. */
+export function resolveSaxAssetUrl(url: string | null | undefined): string {
+  const s = String(url ?? "").trim();
+  if (!s) return "";
+  if (s.startsWith("http://") || s.startsWith("https://")) return s;
+  const base = getSaxApiBase();
+  return base ? `${base}${s.startsWith("/") ? s : `/${s}`}` : s;
+}
+
+export type SiteStoryOverlays = {
+  primaryLink?: { url: string; label: string };
+  textOverlay?: { text: string };
+} | null;
+
+export type PublicSiteStory = {
+  id: string;
+  imageUrl: string;
+  caption: string | null;
+  /** Texto curto abaixo da bolha (estilo nome no Instagram). */
+  bubbleLabel?: string | null;
+  overlays: SiteStoryOverlays;
+  publishedAt: string | null;
+  /** Fim da janela de exibição (ex.: 24h após publicar). Null = sem expiração. */
+  expiresAt?: string | null;
+  sortOrder: number;
+};
+
+export type InstagramMediaItemPublic = {
+  id: string;
+  caption?: string;
+  mediaType: string;
+  mediaUrl?: string;
+  thumbnailUrl?: string;
+  permalink?: string;
+  timestamp?: string;
+};
+
+export type PublicFeedResponse = {
+  stories: PublicSiteStory[];
+  instagram: { items: InstagramMediaItemPublic[] } | null;
+};
+
+/**
+ * Feed público: stories SAX publicadas + grade Instagram (se configurado no PDV).
+ * GET /api/public/feed
+ */
+export async function fetchPublicFeed(): Promise<PublicFeedResponse> {
+  const base = getSaxApiBase();
+  const empty: PublicFeedResponse = { stories: [], instagram: null };
+  if (!base) return empty;
+  try {
+    const res = await fetch(`${base}/api/public/feed`, { cache: "no-store" });
+    if (!res.ok) return empty;
+    const data = (await res.json()) as Partial<PublicFeedResponse>;
+    const stories = Array.isArray(data.stories) ? data.stories : [];
+    const instagram =
+      data.instagram &&
+      typeof data.instagram === "object" &&
+      Array.isArray((data.instagram as { items?: unknown }).items)
+        ? (data.instagram as { items: InstagramMediaItemPublic[] })
+        : null;
+    return { stories, instagram };
+  } catch {
+    return empty;
   }
 }

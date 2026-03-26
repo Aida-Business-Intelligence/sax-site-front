@@ -7,6 +7,56 @@ import { getMapboxToken } from "@/lib/mapbox";
 
 type Marker = { id: string; lat: number; lng: number };
 
+/** Mapbox setFog só aceita cores em formato que o parser deles entende (rgb/hex), não lab()/oklch(). */
+function cssColorToMapboxRgb(raw: string): string {
+  const trimmed = raw.trim();
+  const lower = trimmed.toLowerCase();
+  if (
+    lower.startsWith("#") ||
+    lower.startsWith("rgb(") ||
+    lower.startsWith("rgba(")
+  ) {
+    return trimmed;
+  }
+  if (typeof document === "undefined") return "rgb(255,255,255)";
+  try {
+    const el = document.createElement("div");
+    el.style.position = "absolute";
+    el.style.left = "-9999px";
+    el.style.visibility = "hidden";
+    el.style.pointerEvents = "none";
+    el.style.backgroundColor = trimmed;
+    document.body.appendChild(el);
+    const resolved = getComputedStyle(el).backgroundColor.trim();
+    document.body.removeChild(el);
+    const rl = resolved.toLowerCase();
+    if (
+      resolved &&
+      resolved !== "transparent" &&
+      resolved !== "rgba(0, 0, 0, 0)" &&
+      (rl.startsWith("rgb(") || rl.startsWith("rgba("))
+    ) {
+      return resolved;
+    }
+  } catch {
+    /* ignore */
+  }
+  return "rgb(255,255,255)";
+}
+
+function resolvedPageBackdropColor(): string {
+  if (typeof window === "undefined") return "rgb(255,255,255)";
+  const pick = (el: Element) => getComputedStyle(el).backgroundColor;
+  let raw = pick(document.body);
+  if (!raw || raw === "transparent" || raw === "rgba(0, 0, 0, 0)") {
+    raw = pick(document.documentElement);
+  }
+  if (!raw || raw === "transparent" || raw === "rgba(0, 0, 0, 0)") {
+    return "rgb(255,255,255)";
+  }
+  return cssColorToMapboxRgb(raw);
+}
+
 type Props = {
   center?: { lat: number; lng: number };
   zoom?: number;
@@ -19,6 +69,8 @@ type Props = {
   styleUrl?: string;
   markerStyle?: "default" | "teal-glow" | "neon-blue";
   projectionGlobe?: boolean;
+  /** "dark" = céu como /imoveis/mapa. "light" = névoa clara. "neutral" = sem céu visível (névoa = fundo da página). */
+  globeAtmosphere?: "light" | "dark" | "neutral";
   minZoom?: number;
   maxZoom?: number;
   showControls?: boolean;
@@ -40,6 +92,7 @@ export default function Map({
   styleUrl = "mapbox://styles/mapbox/dark-v11",
   markerStyle = "default",
   projectionGlobe = false,
+  globeAtmosphere = "light",
   minZoom,
   maxZoom,
   showControls = true,
@@ -108,13 +161,32 @@ export default function Map({
           setFog?: (cfg: Record<string, unknown>) => void;
         };
         api.setProjection?.("globe");
-        api.setFog?.({
-          color: "rgb(240,240,242)",
-          "high-color": "rgb(240,240,242)",
-          "space-color": "rgb(230,230,235)",
-          "horizon-blend": 0.02,
-          "star-intensity": 0,
-        });
+        if (globeAtmosphere === "dark") {
+          api.setFog?.({
+            color: "rgb(18, 26, 42)",
+            "high-color": "rgb(32, 44, 68)",
+            "space-color": "rgb(6, 8, 18)",
+            "horizon-blend": 0.14,
+            "star-intensity": 0.5,
+          });
+        } else if (globeAtmosphere === "neutral") {
+          const bg = resolvedPageBackdropColor();
+          api.setFog?.({
+            color: bg,
+            "high-color": bg,
+            "space-color": bg,
+            "horizon-blend": 0,
+            "star-intensity": 0,
+          });
+        } else {
+          api.setFog?.({
+            color: "rgb(240,240,242)",
+            "high-color": "rgb(240,240,242)",
+            "space-color": "rgb(230,230,235)",
+            "horizon-blend": 0.02,
+            "star-intensity": 0,
+          });
+        }
       }
       if (effectiveShow3DBuildings) {
         const layers = map.getStyle().layers ?? [];
@@ -154,6 +226,15 @@ export default function Map({
           },
           labelLayerId ?? undefined
         );
+      }
+      // Globo/estilo podem ignorar minZoom do construtor; reforça após style.load
+      if (minZoom != null) {
+        map.setMinZoom(minZoom);
+        if (map.getZoom() < minZoom) map.setZoom(minZoom);
+      }
+      if (maxZoom != null) {
+        map.setMaxZoom(maxZoom);
+        if (map.getZoom() > maxZoom) map.setZoom(maxZoom);
       }
       setMapReady(true);
     });
@@ -204,9 +285,36 @@ export default function Map({
     effectiveShow3DBuildings,
     view3D,
     projectionGlobe,
+    globeAtmosphere,
     minZoom,
     maxZoom,
   ]);
+
+  useEffect(() => {
+    if (!projectionGlobe || globeAtmosphere !== "neutral") return;
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const applyNeutralFog = () => {
+      const api = map as unknown as {
+        setFog?: (cfg: Record<string, unknown>) => void;
+      };
+      const bg = resolvedPageBackdropColor();
+      api.setFog?.({
+        color: bg,
+        "high-color": bg,
+        "space-color": bg,
+        "horizon-blend": 0,
+        "star-intensity": 0,
+      });
+    };
+    applyNeutralFog();
+    const obs = new MutationObserver(applyNeutralFog);
+    obs.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    return () => obs.disconnect();
+  }, [projectionGlobe, globeAtmosphere, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;

@@ -8,6 +8,9 @@ import { getPropertiesFromApiOnly } from "@/services/properties";
 import HomeFilter from "@/sections/home/HomeFilter";
 import { trackWhatsappClick } from "@/lib/tracking";
 
+/** Globo mobile/tablet: abre neste zoom e não permite afastar mais que isso (América do Sul em destaque). */
+const HERO_MOBILE_GLOBE_ZOOM = 2.4;
+
 const DEFAULT_HERO = {
   title: "Imóveis selecionados para um estilo de vida premium",
   subtitle:
@@ -109,9 +112,9 @@ export default function Hero({ heroContent = null }: HeroProps) {
   const buttonHref = buildButtonHref(hero.buttonLinkType, hero.buttonLink);
 
   return (
-    <section className="relative mx-auto max-w-7xl px-4 pt-12 sm:px-6 sm:pt-48 min-h-[calc(100vh-220px)] sm:min-h-[calc(100vh-180px)] lg:min-h-[calc(100vh-176px)] overflow-visible">
-      <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
-        <div className="space-y-6 relative z-10 hidden md:block">
+    <section className="relative mx-auto flex min-h-[calc(100vh-220px)] max-w-7xl flex-col overflow-visible px-4 pt-12 sm:min-h-[calc(100vh-180px)] sm:px-6 sm:pt-16 2xl:block 2xl:min-h-[calc(100vh-176px)] 2xl:pt-48">
+      <div className="grid gap-8 2xl:grid-cols-2 2xl:items-center">
+        <div className="space-y-6 relative z-10 hidden 2xl:block">
           <motion.h1
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -146,54 +149,40 @@ export default function Hero({ heroContent = null }: HeroProps) {
           </motion.div>
         </div>
         {/* Espaçador para manter o layout do grid; o globo fica absoluto sobre o canto direito */}
-        <div className="hidden lg:block" aria-hidden="true" />
+        <div className="hidden 2xl:block" aria-hidden="true" />
       </div>
 
-      {/* Mapa (mobile): globo centralizado */}
+      {/* Mapa (mobile/tablet): globo “solto” no fundo da página — sombra suave, sem anel escuro (como referência visual) */}
       {hero.showMap && (
-        <div className="md:hidden -mt-2 flex justify-center">
-          <div className="relative w-[92vw] max-w-[380px] aspect-square overflow-hidden rounded-full border border-zinc-900/60 shadow-[0_20px_80px_rgba(0,0,0,0.35)]">
-            <Map
-              center={{ lng: -56, lat: -15 }}
-              zoom={2.1}
-              minZoom={2.1}
-              pitch={0}
-              bearing={0}
-              styleUrl={siteMapStyle}
-              projectionGlobe
-              markers={markers}
-              markerStyle="neon-blue"
-              show3DBuildings
-              autoRotate
-              autoRotateSpeedDegPerSec={1.0}
-              showControls={false}
-              className="h-full w-full"
-            />
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 rounded-full"
-              style={{
-                background:
-                  "radial-gradient(closest-side, rgba(0,0,0,0) 62%, rgba(0,0,0,0.36) 100%)",
-              }}
-            />
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 rounded-full"
-              style={{
-                background:
-                  "radial-gradient(circle at 28% 22%, rgba(255,255,255,0.14), rgba(255,255,255,0) 42%)",
-                mixBlendMode: "screen",
-              }}
-            />
+        <div className="2xl:hidden flex min-h-0 flex-1 basis-0 flex-col items-center justify-center py-3 sm:py-4 -translate-y-8 sm:-translate-y-10 md:landscape:-translate-y-12">
+          <div className="flex w-screen max-w-none justify-center ml-[calc(50%-50vw)]">
+            <div className="relative aspect-square w-[min(calc((100vw-2rem)*0.88),calc((100vh-110px)*0.88))] max-w-none overflow-hidden rounded-full bg-background shadow-[0_20px_60px_-12px_rgba(15,23,42,0.2),0_8px_28px_-6px_rgba(15,23,42,0.12)] ring-1 ring-black/5 md:landscape:w-[min(calc((100vw-2rem)*0.62),calc((100vh-168px)*0.62))] dark:shadow-[0_24px_64px_-12px_rgba(0,0,0,0.55)] dark:ring-white/10">
+              <Map
+                center={{ lng: -56, lat: -15 }}
+                zoom={HERO_MOBILE_GLOBE_ZOOM}
+                minZoom={HERO_MOBILE_GLOBE_ZOOM}
+                pitch={0}
+                bearing={0}
+                styleUrl={siteMapStyle}
+                projectionGlobe
+                globeAtmosphere="neutral"
+                markers={markers}
+                markerStyle="neon-blue"
+                show3DBuildings
+                autoRotate
+                autoRotateSpeedDegPerSec={1.0}
+                showControls={false}
+                className="h-full w-full"
+              />
+            </div>
           </div>
         </div>
       )}
 
       {/* Mapa interativo dentro do círculo (desktop) */}
       {hero.showMap && (
-        <div className="pointer-events-auto absolute right-0 hidden pr-4 md:block z-0 top-24 md:top-28 lg:top-32 xl:top-36">
-          <div className="pointer-events-auto relative md:h-[420px] md:w-[420px] lg:h-[520px] lg:w-[520px] xl:h-[560px] xl:w-[560px] overflow-hidden rounded-full border border-zinc-900/60 shadow-[0_30px_120px_rgba(0,0,0,0.35)]">
+        <div className="pointer-events-auto absolute right-0 hidden pr-4 2xl:block z-0 top-24 2xl:top-36">
+          <div className="pointer-events-auto relative 2xl:h-[520px] 2xl:w-[520px] min-[1700px]:h-[560px] min-[1700px]:w-[560px] overflow-hidden rounded-full border border-zinc-900/60 shadow-[0_30px_120px_rgba(0,0,0,0.35)]">
             <Map
               center={{ lng: -56, lat: -15 }}
               zoom={2.1}
@@ -231,14 +220,14 @@ export default function Hero({ heroContent = null }: HeroProps) {
       )}
 
       {/* Filtro (desktop/tablet fixo próximo à base) */}
-      <div className="hidden md:flex absolute inset-x-0 bottom-40 sm:bottom-32 md:bottom-40 justify-center px-4 sm:px-6 z-50">
+      <div className="hidden 2xl:flex absolute inset-x-0 bottom-40 sm:bottom-32 2xl:bottom-40 justify-center px-4 sm:px-6 z-50">
         <div className="w-full max-w-7xl relative z-50">
           <HomeFilter />
         </div>
       </div>
 
       {/* Filtro (mobile: no fluxo, abaixo do conteúdo) */}
-      <div className="md:hidden mt-0">
+      <div className="2xl:hidden mt-0 shrink-0">
         <HomeFilter />
       </div>
     </section>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getFingerprint } from "@/lib/tracking-crm";
+import { getClientVisitorId, getFingerprint } from "@/lib/tracking-crm";
 import { fetchRecommendations } from "@/lib/sax-api";
 import { mapApiPropertyToProperty } from "@/services/properties";
 import type { Property } from "@/types/realEstate";
@@ -21,8 +21,9 @@ export default function RecommendationsSection({
 
   useEffect(() => {
     const fp = getFingerprint();
-    if (!fp) return;
-    fetchRecommendations(fp)
+    const cid = getClientVisitorId();
+    if (!fp && !cid) return;
+    fetchRecommendations(fp, cid)
       .then((raw) => {
         const list = (Array.isArray(raw) ? raw : [])
           .filter((p): p is Record<string, unknown> => p != null && typeof p === "object")

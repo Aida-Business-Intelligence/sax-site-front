@@ -150,10 +150,9 @@ html.mapa-page-no-header-fade .header-fade-gradient {
   display: none !important;
 }
 
-/* /imoveis/mapa desktop: controles de zoom abaixo do header, filtros e “glass” */
-@media (min-width: 768px) {
+/* /imoveis/mapa: offset dos controles só em telas grandes (2xl), alinhado ao breakpoint do layout */
+@media (min-width: 1536px) {
   .mapa-map-root .mapboxgl-ctrl-top-right {
-    /* abaixo da barra de filtros; header alinhado à home */
     top: 16rem;
   }
 }
