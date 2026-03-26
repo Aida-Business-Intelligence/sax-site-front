@@ -54,14 +54,14 @@ export default function Footer({
   return (
     <footer className="fixed bottom-0 inset-x-0 z-50 w-full border-t border-zinc-800 bg-zinc-900/95 text-zinc-200 backdrop-blur">
       <div className="mx-auto max-w-7xl px-4 py-2 sm:px-6">
-        <div className="flex flex-wrap items-center justify-center md:justify-between gap-3 text-xs sm:text-sm">
+        <div className="flex flex-wrap items-center justify-center 2xl:justify-between gap-3 text-xs sm:text-sm">
           {/* Left: Registry and location */}
-          <div className="w-full md:w-auto text-center md:text-left whitespace-nowrap md:whitespace-normal break-words">
+          <div className="w-full 2xl:w-auto text-center 2xl:text-left whitespace-nowrap 2xl:whitespace-normal break-words">
             {creciLocation}
           </div>
 
           {/* Center: actions */}
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden 2xl:flex items-center gap-6">
             {favoritosHref.startsWith("http") ? (
               <a
                 href={favoritosHref}
@@ -88,7 +88,7 @@ export default function Footer({
           </div>
 
           {/* Right: social (desktop) */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden 2xl:flex items-center gap-3">
             {social.map(({ url, label, Icon }) => (
               <a
                 key={label}
@@ -104,7 +104,7 @@ export default function Footer({
         </div>
 
         {/* Mobile: social icons */}
-        <div className="mt-2 flex items-center justify-center gap-3 md:hidden">
+        <div className="mt-2 flex items-center justify-center gap-3 2xl:hidden">
           {social.map(({ url, label, Icon }) => (
             <a
               key={label}

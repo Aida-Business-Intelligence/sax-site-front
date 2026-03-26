@@ -32,13 +32,13 @@ export default function Header({ logoSrc = null }: HeaderProps) {
       <header
         className={
           isMapaPage
-            ? "md:fixed md:inset-x-0 md:top-0 z-50 pointer-events-none md:bg-white md:shadow-[0_1px_0_0_rgb(0_0_0/0.06)] dark:md:bg-zinc-950"
-            : "md:fixed md:inset-x-0 md:top-0 z-50 pointer-events-none"
+            ? "2xl:fixed 2xl:inset-x-0 2xl:top-0 z-50 pointer-events-none 2xl:bg-white 2xl:shadow-[0_1px_0_0_rgb(0_0_0/0.06)] dark:2xl:bg-zinc-950"
+            : "2xl:fixed 2xl:inset-x-0 2xl:top-0 z-50 pointer-events-none"
         }
       >
         {/* Mobile: filtro no /imoveis/mapa (esquerda) */}
         {usePathname()?.startsWith("/imoveis/mapa") ? (
-          <div className="fixed left-4 top-4 z-50 md:hidden pointer-events-auto">
+          <div className="fixed left-4 top-4 z-50 2xl:hidden pointer-events-auto">
             <button
               type="button"
               aria-label="Abrir filtros do mapa"
@@ -55,7 +55,7 @@ export default function Header({ logoSrc = null }: HeaderProps) {
             </button>
           </div>
         ) : null}
-        <div className="mx-auto max-w-6xl px-4 py-5 flex items-center justify-center md:justify-start">
+        <div className="mx-auto max-w-6xl px-4 py-5 flex items-center justify-center 2xl:justify-start">
           <Link
             href="/"
             className="inline-flex items-center gap-2 pointer-events-auto"
@@ -84,7 +84,7 @@ export default function Header({ logoSrc = null }: HeaderProps) {
       </header>
 
       {/* Floating menu (desktop/tablet) */}
-      <div className="fixed inset-x-0 top-4 z-50 hidden md:flex pointer-events-none">
+      <div className="fixed inset-x-0 top-4 z-50 hidden 2xl:flex pointer-events-none">
         <div className="relative mx-auto w-full max-w-6xl flex items-center justify-center px-4">
           <nav className="pointer-events-auto rounded-full border border-zinc-200 bg-white/95 px-2 sm:px-3 py-1 shadow-md backdrop-blur-md ring-1 ring-black/5 dark:border-zinc-800 dark:bg-zinc-900/90 max-w-[95vw] overflow-x-auto">
             <ul className="flex items-center gap-0.5 sm:gap-1">
@@ -142,7 +142,7 @@ function MobileMenu({
   const [open, setOpen] = useState(false);
   return (
     <>
-      <div className="absolute right-4 top-4 z-50 md:hidden pointer-events-auto">
+      <div className="absolute right-4 top-4 z-50 2xl:hidden pointer-events-auto">
         <button
           type="button"
           aria-label="Abrir menu"
@@ -157,7 +157,7 @@ function MobileMenu({
       <AnimatePresence>
         {open ? (
           <motion.div
-            className="fixed inset-0 z-[80] md:hidden"
+            className="fixed inset-0 z-[80] 2xl:hidden"
             aria-modal="true"
             role="dialog"
             initial={{ opacity: 0 }}
