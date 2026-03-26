@@ -66,11 +66,15 @@ export default async function RootLayout({
     const config = await getSiteConfig();
     footerContent = config?.footerContent ?? null;
     const base = getSaxApiBase();
-    if (config?.logoUrl && base) {
-      logoSrc = `${base}${config.logoUrl.startsWith("/") ? config.logoUrl : `/${config.logoUrl}`}`;
+    if (config?.logoUrl) {
+      logoSrc = config.logoUrl.startsWith("http")
+        ? config.logoUrl
+        : `${base}${config.logoUrl.startsWith("/") ? config.logoUrl : `/${config.logoUrl}`}`;
     }
-    if (config?.faviconUrl && base) {
-      faviconSrc = `${base}${config.faviconUrl.startsWith("/") ? config.faviconUrl : `/${config.faviconUrl}`}`;
+    if (config?.faviconUrl) {
+      faviconSrc = config.faviconUrl.startsWith("http")
+        ? config.faviconUrl
+        : `${base}${config.faviconUrl.startsWith("/") ? config.faviconUrl : `/${config.faviconUrl}`}`;
     }
   } catch {
     // ignora; Header usa logo padrão
