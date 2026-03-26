@@ -18,6 +18,7 @@ export default function Header({ logoSrc = null }: HeaderProps) {
   const pathname = usePathname();
   const items = [
     { href: "/imoveis", label: "Imóveis" },
+    { href: "/feed", label: "Feed" },
     { href: "/sobre", label: "Sobre nós" },
     { href: "/projetos-exclusivos", label: "Projetos exclusivos" },
     { href: "https://open.spotify.com/show/1BLwMlTNBV1vS6jjLbQWL3", label: "Podcast" },
