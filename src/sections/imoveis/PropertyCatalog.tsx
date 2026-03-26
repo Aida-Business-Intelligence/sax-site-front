@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { trackEvent } from "@/lib/analytics";
 import { trackEvent as trackCrm } from "@/lib/tracking-crm";
@@ -37,9 +38,15 @@ function getParam(
   return Array.isArray(v) ? v[0] : (v as string | undefined);
 }
 
+function slugMatches(a: string, b: string): boolean {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
 function buildVerTodosHref(sectionSlug: string, filters: FormValues): string {
   const q = new URLSearchParams();
-  q.set("secao", sectionSlug);
+  const slug = String(sectionSlug ?? "").trim();
+  if (!slug) return "/imoveis";
+  q.set("secao", slug);
   const mode = filters.mode ?? "venda";
   q.set("mode", mode);
   if (filters.city && filters.city !== "__all__") q.set("city", filters.city);
@@ -123,7 +130,18 @@ function PropertyCatalog({
     defaultValues: defaultValuesFromParams,
   });
 
-  const sectionSlugFromUrl = getParam(initialSearchParams, "secao");
+  const searchParams = useSearchParams();
+  const sectionSlugFromUrl = useMemo(() => {
+    const fromUrl = searchParams.get("secao");
+    if (fromUrl != null && fromUrl !== "") {
+      try {
+        return decodeURIComponent(fromUrl).trim();
+      } catch {
+        return fromUrl.trim();
+      }
+    }
+    return getParam(initialSearchParams, "secao")?.trim() ?? "";
+  }, [searchParams, initialSearchParams]);
 
   useEffect(() => {
     if (!initialSearchParams) return;
@@ -224,13 +242,26 @@ function PropertyCatalog({
         properties: applyFilter(sectionProps, watchValues),
       })
     );
-    return withFiltered.filter(({ properties }) => properties.length > 0);
-  }, [sectionsWithProperties, watchValues, watchMode]);
+    return withFiltered.filter(({ section, properties }) => {
+      if (
+        sectionSlugFromUrl &&
+        slugMatches(section.slug, sectionSlugFromUrl)
+      ) {
+        return true;
+      }
+      return properties.length > 0;
+    });
+  }, [
+    sectionsWithProperties,
+    watchValues,
+    watchMode,
+    sectionSlugFromUrl,
+  ]);
 
   const displaySections = useMemo(() => {
     if (!sectionSlugFromUrl) return filteredSections;
-    return filteredSections.filter(
-      (s) => s.section.slug === sectionSlugFromUrl
+    return filteredSections.filter((s) =>
+      slugMatches(s.section.slug, sectionSlugFromUrl)
     );
   }, [filteredSections, sectionSlugFromUrl]);
 

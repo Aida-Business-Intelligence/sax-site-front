@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { getProperties, getSectionsWithProperties, getTags, getSiteConfig } from "@/services/properties";
 import { buildMetadata } from "@/lib/seo";
 import { cn } from "@/lib/utils";
@@ -48,15 +49,21 @@ export default async function ImoveisPage({
         )}
       >
         <Breadcrumbs items={[{ label: "Início", href: "/" }, { label: "Imóveis", href: "/imoveis" }]} />
-        <PropertyCatalog
-          properties={properties}
-          sectionsWithProperties={sectionsWithProperties}
-          tags={tags}
-          initialSearchParams={params}
-          featuredPropertyIds={siteConfig?.featuredPropertyIds ?? []}
-          partnerLogos={partnerLogos}
-          transactionTypes={siteConfig?.transactionTypes ?? []}
-        />
+        <Suspense
+          fallback={
+            <div className="min-h-[50vh] animate-pulse rounded-xl bg-zinc-100/80 dark:bg-zinc-800/40" />
+          }
+        >
+          <PropertyCatalog
+            properties={properties}
+            sectionsWithProperties={sectionsWithProperties}
+            tags={tags}
+            initialSearchParams={params}
+            featuredPropertyIds={siteConfig?.featuredPropertyIds ?? []}
+            partnerLogos={partnerLogos}
+            transactionTypes={siteConfig?.transactionTypes ?? []}
+          />
+        </Suspense>
       </div>
     </div>
   );
