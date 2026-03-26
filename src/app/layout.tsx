@@ -9,6 +9,7 @@ import MuiThemeProvider from "@/components/providers/MuiThemeProvider";
 import { JsonLdRealEstateAgent } from "@/components/seo/JsonLdRealEstateAgent";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { AnalyticsSender } from "@/components/AnalyticsSender";
+import { HuntModeOverlay } from "@/components/hunt/HuntModeOverlay";
 import { Toaster } from "sonner";
 import { getSiteConfig } from "@/services/properties";
 import { getSaxApiBase } from "@/lib/sax-api";
@@ -169,19 +170,20 @@ export default async function RootLayout({
             }}
           />
           <CookieConsentBanner />
+          <HuntModeOverlay />
           <AnalyticsSender />
           <Header logoSrc={logoSrc} />
           {/* Top mask to fade content under fixed header/menu */}
           {/* Solid cap under the fixed header (desktop/tablet only); oculto em /imoveis/mapa via .mapa-page-no-header-fade */}
-          <div className="header-fade-cap pointer-events-none fixed inset-x-0 top-0 z-40 hidden h-12 bg-white dark:bg-zinc-900 md:block" />
-          {/* Stronger fade below the cap (desktop/tablet only) */}
-          <div className="header-fade-gradient pointer-events-none fixed inset-x-0 top-12 z-40 hidden h-24 bg-linear-to-b from-white/98 via-white/80 to-transparent dark:from-zinc-900 dark:via-zinc-900/85 md:block" />
+          <div className="header-fade-cap pointer-events-none fixed inset-x-0 top-0 z-40 hidden h-12 bg-white dark:bg-zinc-900 2xl:block" />
+          {/* Stronger fade below the cap (telas grandes; tablet/iPad = mesmo que mobile) */}
+          <div className="header-fade-gradient pointer-events-none fixed inset-x-0 top-12 z-40 hidden h-24 bg-linear-to-b from-white/98 via-white/80 to-transparent dark:from-zinc-900 dark:via-zinc-900/85 2xl:block" />
           {/* Footer é fixed: bloco invisível no fim do main força altura de rolagem acima da barra (padding no main sozinho falha em alguns layouts flex). */}
           <main className="flex min-h-0 flex-1 flex-col">
             <div className="min-h-0 w-full flex-1">{children}</div>
             <div
               aria-hidden
-              className="pointer-events-none shrink-0 max-md:min-h-[15rem] md:min-h-28"
+              className="pointer-events-none shrink-0 max-2xl:min-h-[15rem] 2xl:min-h-28"
               style={{
                 paddingBottom: "max(0px, env(safe-area-inset-bottom, 0px))",
               }}

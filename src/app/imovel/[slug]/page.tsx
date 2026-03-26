@@ -1,10 +1,10 @@
 import { buildMetadata } from "@/lib/seo";
 import { getPropertyBySlug, getSiteConfig } from "@/services/properties";
 import { PropertyExpertWhatsAppButton } from "@/components/imovel/PropertyExpertWhatsAppButton";
+import { PropertyImageGallery } from "@/components/imovel/PropertyImageGallery";
 import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
 import { JsonLdProperty } from "@/components/seo/JsonLdProperty";
 import { PropertyViewAnalytics } from "@/components/PropertyViewAnalytics";
-import Image from "next/image";
 import Link from "next/link";
 import Map from "@/components/map/Map";
 import { trackImovelView } from "@/lib/tracking";
@@ -145,7 +145,7 @@ export default async function ImovelPage({ params }: Props) {
           Voltar
         </Link>
         {waHref ? (
-          <div className="md:hidden">
+          <div className="2xl:hidden">
             <PropertyExpertWhatsAppButton
               href={waHref}
               compact
@@ -156,23 +156,14 @@ export default async function ImovelPage({ params }: Props) {
           </div>
         ) : null}
       </div>
-      <div className="grid gap-10 lg:grid-cols-2">
+      <div className="grid gap-10 2xl:grid-cols-2">
         <div className="space-y-6">
-          <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl bg-zinc-200/60 dark:bg-zinc-800/40">
-            {property.coverImage?.url?.trim() ? (
-              <Image
-                src={property.coverImage.url}
-                alt={property.coverImage.alt || property.title}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 50vw"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-zinc-400 dark:text-zinc-500">
-                <span className="text-sm">Sem imagem</span>
-              </div>
-            )}
-          </div>
+          <PropertyImageGallery
+            key={property.slug}
+            title={property.title}
+            cover={property.coverImage}
+            images={property.images}
+          />
           <div>
             {property.ref && (
               <p className="mb-1 text-sm font-medium text-zinc-500 dark:text-zinc-400">

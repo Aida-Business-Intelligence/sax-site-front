@@ -366,7 +366,7 @@ export default function MapaPage() {
   return (
     <div className="relative min-h-screen">
       {/* Sticky: mesmo padrão visual de /imoveis (grid + label + ícone) */}
-      <div className="sticky top-28 z-30 mx-auto hidden max-w-7xl px-4 sm:px-6 md:top-32 md:block">
+      <div className="sticky top-28 z-30 mx-auto hidden max-w-7xl px-4 sm:px-6 2xl:top-32 2xl:block">
         <div className="rounded-2xl border border-zinc-200 bg-white/90 px-4 py-4 shadow-lg backdrop-blur-md ring-1 ring-black/5 dark:border-zinc-800 dark:bg-zinc-900/80">
           <Form {...form}>
             <form className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-8 items-end [&>*]:min-w-0">
@@ -640,11 +640,11 @@ export default function MapaPage() {
       {/* Fullscreen map; mapa-map-root: offset dos +/- no desktop (globals.css) */}
       <div
         ref={mapContainer}
-        className="mapa-map-root mt-3 h-[calc(100vh-110px)] w-full md:h-[calc(100vh-118px)]"
+        className="mapa-map-root mt-3 h-[calc(100vh-110px)] w-full 2xl:h-[calc(100vh-118px)]"
       />
 
       {/* Mobile: usa o mesmo drawer de filtros da Home; o botão da header dispara open-map-filters */}
-      <div className="md:hidden">
+      <div className="2xl:hidden">
         <HomeFilter
           mobileTriggerPosition="top"
           hideMobileTrigger

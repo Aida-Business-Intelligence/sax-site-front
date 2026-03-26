@@ -249,8 +249,8 @@ function PropertyCatalog({
 
   return (
     <>
-      {/* Filtro desktop/tablet */}
-      <div className="sticky top-32 z-40 mb-20 mt-8 relative hidden md:block">
+      {/* Filtro só em telas muito grandes; tablet/iPad = fluxo mobile */}
+      <div className="sticky top-32 z-40 mb-20 mt-8 relative hidden 2xl:block">
         <Form {...form}>
           <form className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 relative z-40 [&>*]:min-w-0">
             {/* Localização */}
@@ -501,12 +501,12 @@ function PropertyCatalog({
           </form>
         </Form>
         {/* Top/Bottom fades (desktop only) */}
-        <div className="hidden md:block pointer-events-none absolute left-1/2 -translate-x-1/2 -top-40 z-30 h-60 w-screen bg-linear-to-t from-white/98 via-white/95 to-transparent dark:from-zinc-900 dark:via-zinc-900/85" />
-        <div className="hidden md:block pointer-events-none absolute left-1/2 -translate-x-1/2 -bottom-1 z-30 h-32 w-screen bg-linear-to-b from-white/98 via-white/85 to-transparent dark:from-zinc-900 dark:via-zinc-900/85" />
+        <div className="hidden 2xl:block pointer-events-none absolute left-1/2 -translate-x-1/2 -top-40 z-30 h-60 w-screen bg-linear-to-t from-white/98 via-white/95 to-transparent dark:from-zinc-900 dark:via-zinc-900/85" />
+        <div className="hidden 2xl:block pointer-events-none absolute left-1/2 -translate-x-1/2 -bottom-1 z-30 h-32 w-screen bg-linear-to-b from-white/98 via-white/85 to-transparent dark:from-zinc-900 dark:via-zinc-900/85" />
       </div>
 
       {/* Mobile: usa o mesmo HomeFilter com botão no topo */}
-      <div className="md:hidden">
+      <div className="2xl:hidden">
         <HomeFilter mobileTriggerPosition="top" />
       </div>
 
@@ -528,10 +528,10 @@ function PropertyCatalog({
         <FeaturedBanner property={bannerProperty} />
       ) : null}
       {/* Mapa (mesmo ritmo de margem do banner: mb-12 no MapTeaser) → recomendações (grid estático) → parceiros (py-14 + logo rail) */}
-      <div className="md:hidden">
+      <div className="2xl:hidden">
         <MapTeaser properties={filtered} />
       </div>
-      <div className="hidden md:block">
+      <div className="hidden 2xl:block">
         <div className="relative">
           <div className="sticky top-66 z-10">
             <MapTeaser properties={filtered} />

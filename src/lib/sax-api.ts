@@ -122,6 +122,7 @@ export async function fetchSiteConfig(): Promise<{
   exclusiveProjectsContent: Record<string, unknown> | null;
   imoveisContent: Record<string, unknown> | null;
   proprietariosContent: Record<string, unknown> | null;
+  huntModeEnabled: boolean;
 }> {
   const base = getSaxApiBase();
   const empty = {
@@ -137,6 +138,7 @@ export async function fetchSiteConfig(): Promise<{
     exclusiveProjectsContent: null as Record<string, unknown> | null,
     imoveisContent: null as Record<string, unknown> | null,
     proprietariosContent: null as Record<string, unknown> | null,
+    huntModeEnabled: false,
   };
   if (!base) return empty;
   try {
@@ -176,6 +178,7 @@ export async function fetchSiteConfig(): Promise<{
       exclusiveProjectsContent: ex,
       imoveisContent,
       proprietariosContent,
+      huntModeEnabled: Boolean(data?.huntModeEnabled),
     };
   } catch {
     return empty;
@@ -220,17 +223,23 @@ export async function fetchPropertyBySlug(slug: string): Promise<unknown | null>
 }
 
 /**
- * Busca imóveis recomendados para o visitante (por fingerprint).
+ * Busca imóveis recomendados para o visitante (clientVisitorId + fingerprint).
  * Retorna array no mesmo formato de fetchProperties (para mapApiPropertyToProperty).
  */
-export async function fetchRecommendations(fingerprint: string): Promise<unknown[]> {
+export async function fetchRecommendations(
+  fingerprint: string,
+  clientVisitorId?: string
+): Promise<unknown[]> {
   const base = getSaxApiBase();
-  if (!base || !fingerprint) return [];
+  if (!base) return [];
+  if (!fingerprint && !clientVisitorId?.trim()) return [];
   try {
-    const res = await fetch(
-      `${base}/api/tracking/recommendations?fingerprint=${encodeURIComponent(fingerprint)}`,
-      { cache: "no-store" }
-    );
+    const params = new URLSearchParams();
+    if (fingerprint) params.set("fingerprint", fingerprint);
+    if (clientVisitorId?.trim()) params.set("clientVisitorId", clientVisitorId.trim());
+    const res = await fetch(`${base}/api/tracking/recommendations?${params.toString()}`, {
+      cache: "no-store",
+    });
     if (!res.ok) return [];
     const data = await res.json();
     return Array.isArray(data) ? data : [];

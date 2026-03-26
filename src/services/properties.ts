@@ -585,6 +585,7 @@ export async function getSiteConfig(): Promise<{
   exclusiveProjectsContent: Record<string, unknown> | null;
   imoveisContent: Record<string, unknown> | null;
   proprietariosContent: Record<string, unknown> | null;
+  huntModeEnabled: boolean;
 }> {
   const fallback = {
     featuredPropertyIds: [] as string[],
@@ -599,6 +600,7 @@ export async function getSiteConfig(): Promise<{
     exclusiveProjectsContent: null as Record<string, unknown> | null,
     imoveisContent: null as Record<string, unknown> | null,
     proprietariosContent: null as Record<string, unknown> | null,
+    huntModeEnabled: false,
   };
   if (hasSaxApi()) {
     try {

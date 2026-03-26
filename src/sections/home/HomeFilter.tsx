@@ -239,9 +239,9 @@ export default function HomeFilter({
   return (
     <>
       {/* Desktop/Tablet card */}
-      <div className="hidden md:block rounded-2xl border border-zinc-200 bg-white/90 px-4 py-4 shadow-md backdrop-blur-md ring-1 ring-black/5 dark:border-zinc-800 dark:bg-zinc-900/80">
-        {/* Título dentro do filtro (exibido no mobile para seguir o modelo) */}
-        <div className="mb-3 text-center md:hidden">
+      <div className="hidden 2xl:block rounded-2xl border border-zinc-200 bg-white/90 px-4 py-4 shadow-md backdrop-blur-md ring-1 ring-black/5 dark:border-zinc-800 dark:bg-zinc-900/80">
+        {/* Título dentro do filtro (exibido no mobile/tablet para seguir o modelo) */}
+        <div className="mb-3 text-center 2xl:hidden">
           <h2 className="text-base font-semibold leading-snug text-zinc-900 dark:text-white">
             Imóveis selecionados para um estilo de vida premium
           </h2>
@@ -626,7 +626,7 @@ export default function HomeFilter({
       </div>
 
       {/* Mobile: botão único + drawer lateral */}
-      <div className="md:hidden">
+      <div className="2xl:hidden">
         {!hideMobileTrigger &&
           (mobileTriggerPosition === "bottom" ? (
         <div className="fixed inset-x-0 bottom-36 z-[55] flex justify-center px-4">
