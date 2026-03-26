@@ -1,6 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { Bath, Bed, MapPin, Ruler } from "lucide-react";
 import type { Property } from "@/types/realEstate";
 
 function hasValidCoverUrl(property: Property): boolean {
@@ -32,11 +33,34 @@ export default function PropertyCard({ property }: { property: Property }) {
         )}
       </div>
       <div className="p-4">
-        <h3 className="text-sm font-semibold">{property.title}</h3>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          {property.address.city}, {property.address.state}
+        <h3 className="text-sm font-semibold leading-snug">{property.title}</h3>
+        <p className="mt-1 flex items-center gap-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+          <MapPin className="size-3.5 shrink-0 opacity-70" aria-hidden />
+          <span>
+            {property.address.city}, {property.address.state}
+          </span>
         </p>
-        <p className="mt-2 text-sm font-medium">
+        <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
+          <li className="inline-flex items-center gap-1">
+            <Ruler className="size-3.5 shrink-0 opacity-70" aria-hidden />
+            <span>{property.area}m²</span>
+          </li>
+          <li className="inline-flex items-center gap-1">
+            <Bed className="size-3.5 shrink-0 opacity-70" aria-hidden />
+            <span>
+              {property.bedrooms}{" "}
+              {property.bedrooms === 1 ? "dormitório" : "dormitórios"}
+            </span>
+          </li>
+          <li className="inline-flex items-center gap-1">
+            <Bath className="size-3.5 shrink-0 opacity-70" aria-hidden />
+            <span>
+              {property.bathrooms}{" "}
+              {property.bathrooms === 1 ? "banheiro" : "banheiros"}
+            </span>
+          </li>
+        </ul>
+        <p className="mt-2 text-sm font-medium text-zinc-900 dark:text-zinc-100">
           {property.price.toLocaleString("pt-BR", {
             style: "currency",
             currency: "BRL",
