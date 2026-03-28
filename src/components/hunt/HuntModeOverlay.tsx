@@ -70,8 +70,13 @@ function normalizePhoneBr(raw: string): string {
   return "";
 }
 
-export function HuntModeOverlay() {
-  const [enabled, setEnabled] = useState(false);
+type HuntModeOverlayProps = {
+  /** Valor lido no servidor (GET /api/site-config sem CORS). Se o fetch no cliente falhar, mantemos este valor. */
+  huntModeEnabled?: boolean;
+};
+
+export function HuntModeOverlay({ huntModeEnabled: serverHuntEnabled = false }: HuntModeOverlayProps) {
+  const [enabled, setEnabled] = useState(Boolean(serverHuntEnabled));
   const [checked, setChecked] = useState(false);
   const [open, setOpen] = useState(false);
   const [showFab, setShowFab] = useState(false);
@@ -95,7 +100,8 @@ export function HuntModeOverlay() {
         if (cancelled) return;
         setEnabled(Boolean(cfg.huntModeEnabled));
       } catch {
-        setEnabled(false);
+        // CORS, rede ou API fora: não forçar false — senão o funil some mesmo com toggle ativo no PDV.
+        setEnabled(Boolean(serverHuntEnabled));
       } finally {
         if (!cancelled) setChecked(true);
       }
@@ -103,7 +109,7 @@ export function HuntModeOverlay() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [serverHuntEnabled]);
 
   useEffect(() => {
     if (!checked || !enabled) return;

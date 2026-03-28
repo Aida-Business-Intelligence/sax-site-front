@@ -129,6 +129,9 @@ export function identifyLead(data: IdentifyLeadData = {}, options?: IdentifyLead
   const fingerprint = getFingerprint();
   if (!clientVisitorId && !fingerprint) return;
 
+  /** Mesma loja que o PDV usa na lista — ver sax-backend CRM_DEFAULT_WAREHOUSE_ID / catálogo de imóveis. */
+  const warehouseIdFromEnv = process.env.NEXT_PUBLIC_CRM_WAREHOUSE_ID?.trim();
+
   const payload = {
     clientVisitorId,
     fingerprint,
@@ -137,6 +140,7 @@ export function identifyLead(data: IdentifyLeadData = {}, options?: IdentifyLead
     phone: data.phone?.trim() || undefined,
     source: options?.source,
     crmMetadata: options?.crmMetadata,
+    ...(warehouseIdFromEnv ? { warehouse_id: warehouseIdFromEnv } : {}),
   };
 
   fetch(`${base}/api/tracking/lead/identify`, {

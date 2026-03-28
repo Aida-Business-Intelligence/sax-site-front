@@ -63,9 +63,12 @@ export default async function RootLayout({
   let logoSrc: string | null = null;
   let faviconSrc: string | null = null;
   let footerContent: Record<string, unknown> | null = null;
+  /** Usado pelo Modo Caça: vem do servidor (sem CORS), evita ficar desligado quando o fetch no browser falha. */
+  let huntModeEnabledFromServer = false;
   try {
     const config = await getSiteConfig();
     footerContent = config?.footerContent ?? null;
+    huntModeEnabledFromServer = Boolean(config?.huntModeEnabled);
     const base = getSaxApiBase();
     if (config?.logoUrl) {
       logoSrc = config.logoUrl.startsWith("http")
@@ -170,7 +173,7 @@ export default async function RootLayout({
             }}
           />
           <CookieConsentBanner />
-          <HuntModeOverlay />
+          <HuntModeOverlay huntModeEnabled={huntModeEnabledFromServer} />
           <AnalyticsSender />
           <Header logoSrc={logoSrc} />
           {/* Top mask to fade content under fixed header/menu */}

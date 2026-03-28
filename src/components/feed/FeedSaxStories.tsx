@@ -478,7 +478,7 @@ function FeedSaxStoriesContent({ stories }: Props) {
             </div>
 
             <div
-              className={`absolute right-3 top-10 z-30 flex items-center gap-2 md:right-4 md:top-4 ${
+              className={`absolute right-3 top-14 z-30 flex items-center gap-2 md:right-4 md:top-8 ${
                 showChrome ? "opacity-100" : "pointer-events-none opacity-0"
               }`}
             >
