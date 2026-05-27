@@ -356,7 +356,7 @@ export default async function ImovelPage({ params }: Props) {
                 )}
 
                 {/* Sim/Não: Mobiliado, Pets, Permuta, Em construção, Parceria */}
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/30">
+                {/* <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/30">
                   <h3 className="mb-3 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
                     Outras informações
                   </h3>
@@ -414,7 +414,7 @@ export default async function ImovelPage({ params }: Props) {
                       </li>
                     )}
                   </ul>
-                </div>
+                </div> */}
               </div>
 
               {/* Tags do imóvel */}
