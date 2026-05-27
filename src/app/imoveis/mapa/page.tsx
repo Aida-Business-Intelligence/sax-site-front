@@ -62,6 +62,7 @@ const schema = z.object({
       "galpao",
       "kitnet",
       "studio",
+      "comercial",
     ])
     .optional(),
   bedrooms: z.string().optional(),
