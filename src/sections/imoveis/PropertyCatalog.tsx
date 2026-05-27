@@ -31,7 +31,7 @@ import { applyFilter } from "@/lib/property-filter";
 
 function getParam(
   params: Record<string, string | string[] | undefined> | undefined,
-  key: string
+  key: string,
 ): string | undefined {
   if (!params || !(key in params)) return undefined;
   const v = params[key];
@@ -62,7 +62,24 @@ function buildVerTodosHref(sectionSlug: string, filters: FormValues): string {
 const schema = z.object({
   city: z.string().optional(),
   mode: z.string().default("venda"),
-  type: z.enum(["casa", "apartamento", "terreno", "comercial"]).optional(),
+  type: z
+    .enum([
+      "casa",
+      "casa_condominio",
+      "apartamento",
+      "duplex",
+      "master",
+      "flat",
+      "cobertura",
+      "terraco",
+      "terreno",
+      "sala",
+      "galpao",
+      "kitnet",
+      "studio",
+      "comercial",
+    ])
+    .optional(),
   bedrooms: z.string().optional(),
   priceRange: z.enum(["lt500k", "500k-1m", "1m-2m", "gt2m"]).optional(),
   tag: z.string().optional(),
@@ -120,7 +137,7 @@ function PropertyCatalog({
       bedrooms: getParam(initialSearchParams, "bedrooms"),
       priceRange: getParam(
         initialSearchParams,
-        "priceRange"
+        "priceRange",
       ) as FormValues["priceRange"],
     };
   }, [initialSearchParams, typeOptions, defaultMode]);
@@ -210,7 +227,7 @@ function PropertyCatalog({
       { value: "__all__", label: "Todas" },
       ...builderOptions.map((name) => ({ value: name, label: name })),
     ],
-    [builderOptions]
+    [builderOptions],
   );
 
   const tagOptions = useMemo(() => {
@@ -219,7 +236,7 @@ function PropertyCatalog({
         .sort(
           (a, b) =>
             (a.sortOrder ?? 0) - (b.sortOrder ?? 0) ||
-            a.name.localeCompare(b.name)
+            a.name.localeCompare(b.name),
         )
         .map((t) => t.name);
     }
@@ -232,7 +249,7 @@ function PropertyCatalog({
 
   const filtered = useMemo(
     () => applyFilter(properties ?? [], watchValues),
-    [properties, watchValues, watchMode]
+    [properties, watchValues, watchMode],
   );
 
   const filteredSections = useMemo(() => {
@@ -240,28 +257,20 @@ function PropertyCatalog({
       ({ section, properties: sectionProps }) => ({
         section,
         properties: applyFilter(sectionProps, watchValues),
-      })
+      }),
     );
     return withFiltered.filter(({ section, properties }) => {
-      if (
-        sectionSlugFromUrl &&
-        slugMatches(section.slug, sectionSlugFromUrl)
-      ) {
+      if (sectionSlugFromUrl && slugMatches(section.slug, sectionSlugFromUrl)) {
         return true;
       }
       return properties.length > 0;
     });
-  }, [
-    sectionsWithProperties,
-    watchValues,
-    watchMode,
-    sectionSlugFromUrl,
-  ]);
+  }, [sectionsWithProperties, watchValues, watchMode, sectionSlugFromUrl]);
 
   const displaySections = useMemo(() => {
     if (!sectionSlugFromUrl) return filteredSections;
     return filteredSections.filter((s) =>
-      slugMatches(s.section.slug, sectionSlugFromUrl)
+      slugMatches(s.section.slug, sectionSlugFromUrl),
     );
   }, [filteredSections, sectionSlugFromUrl]);
 
@@ -275,8 +284,7 @@ function PropertyCatalog({
   }, [properties, featuredPropertyIds]);
 
   const bannerProperty = filtered[0] ?? properties[0] ?? null;
-  const hasPartners =
-    Array.isArray(partnerLogos) && partnerLogos.length > 0;
+  const hasPartners = Array.isArray(partnerLogos) && partnerLogos.length > 0;
 
   return (
     <>
@@ -376,10 +384,22 @@ function PropertyCatalog({
                         <SelectContent>
                           <SelectItem value="__all__">Todos</SelectItem>
                           <SelectItem value="casa">Casa</SelectItem>
+                          <SelectItem value="casa_condominio">
+                            Casa Condomínio
+                          </SelectItem>
                           <SelectItem value="apartamento">
                             Apartamento
                           </SelectItem>
+                          <SelectItem value="duplex">Duplex</SelectItem>
+                          <SelectItem value="master">Master</SelectItem>
+                          <SelectItem value="flat">Flat</SelectItem>
+                          <SelectItem value="cobertura">Cobertura</SelectItem>
+                          <SelectItem value="terraco">Terraço</SelectItem>
                           <SelectItem value="terreno">Terreno</SelectItem>
+                          <SelectItem value="sala">Sala</SelectItem>
+                          <SelectItem value="galpao">Galpão</SelectItem>
+                          <SelectItem value="kitnet">Kitnet</SelectItem>
+                          <SelectItem value="studio">Studio</SelectItem>
                           <SelectItem value="comercial">Comercial</SelectItem>
                         </SelectContent>
                       </Select>

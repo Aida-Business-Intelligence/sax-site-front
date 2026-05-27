@@ -12,10 +12,26 @@ const STORAGE_SNOOZE = "sax.hunt.v1.snoozeUntil";
 const OPEN_DELAY_MS = 6000;
 
 type Mode = "venda" | "aluguel";
-type PropertyKind = "casa" | "apartamento" | "terreno" | "comercial";
+type PropertyKind =
+  | "casa"
+  | "casa_condominio"
+  | "apartamento"
+  | "duplex"
+  | "master"
+  | "flat"
+  | "cobertura"
+  | "terraco"
+  | "terreno"
+  | "sala"
+  | "galpao"
+  | "kitnet"
+  | "studio";
 type PriceRangeKey = "any" | "lt500k" | "500k-1m" | "1m-2m" | "gt2m";
 
-const PRICE_RANGES: Record<Exclude<PriceRangeKey, "any">, { min?: number; max?: number }> = {
+const PRICE_RANGES: Record<
+  Exclude<PriceRangeKey, "any">,
+  { min?: number; max?: number }
+> = {
   lt500k: { max: 500_000 },
   "500k-1m": { min: 500_000, max: 1_000_000 },
   "1m-2m": { min: 1_000_000, max: 2_000_000 },
@@ -40,7 +56,7 @@ function filterMatches(
   mode: Mode,
   kind: PropertyKind,
   bedroomsMin: number,
-  priceRange: PriceRangeKey
+  priceRange: PriceRangeKey,
 ): Property[] {
   return list.filter((p) => {
     if (p.type !== kind) return false;
@@ -143,8 +159,9 @@ export function HuntModeOverlay() {
       setLoadingMatches(true);
       try {
         const raw = await fetchProperties();
-        const list = (Array.isArray(raw) ? raw : [])
-          .map((p) => mapApiPropertyToProperty(p as Record<string, unknown>));
+        const list = (Array.isArray(raw) ? raw : []).map((p) =>
+          mapApiPropertyToProperty(p as Record<string, unknown>),
+        );
         const m = filterMatches(list, mode, kind, bedroomsMin, pr);
         setMatches(m);
         trackEvent("FUNNEL_HUNT_MATCH", {
@@ -158,7 +175,7 @@ export function HuntModeOverlay() {
         setLoadingMatches(false);
       }
     },
-    [mode, kind, bedroomsMin]
+    [mode, kind, bedroomsMin],
   );
 
   const handleFinishPhone = useCallback(async () => {
@@ -177,7 +194,7 @@ export function HuntModeOverlay() {
             priceRange,
             matchesCount: matches.length,
           },
-        }
+        },
       );
       trackEvent("FUNNEL_HUNT_COMPLETE", {
         mode,
@@ -211,7 +228,7 @@ export function HuntModeOverlay() {
           className={cn(
             "fixed bottom-6 right-4 z-[110] flex items-center gap-2 rounded-full border border-emerald-500/40",
             "bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg",
-            "transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-emerald-400 2xl:bottom-8 2xl:right-8"
+            "transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-emerald-400 2xl:bottom-8 2xl:right-8",
           )}
         >
           <span aria-hidden>🎯</span> Modo Caça
@@ -229,7 +246,7 @@ export function HuntModeOverlay() {
             className={cn(
               "flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-white/10",
               "max-h-[min(88dvh,calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-2rem))]",
-              "bg-gradient-to-b from-zinc-900 via-zinc-950 to-black text-zinc-100 shadow-2xl sm:max-h-[min(90vh,88dvh)]"
+              "bg-gradient-to-b from-zinc-900 via-zinc-950 to-black text-zinc-100 shadow-2xl sm:max-h-[min(90vh,88dvh)]",
             )}
           >
             <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
@@ -257,12 +274,16 @@ export function HuntModeOverlay() {
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
               {step === 0 && (
                 <div className="space-y-4">
-                  <h2 id="hunt-title" className="text-xl font-bold tracking-tight sm:text-2xl">
+                  <h2
+                    id="hunt-title"
+                    className="text-xl font-bold tracking-tight sm:text-2xl"
+                  >
                     Seu imóvel ideal em poucos passos
                   </h2>
                   <p className="text-sm leading-relaxed text-zinc-400">
-                    Responda rápido, ganhe pontos e veja quantos imóveis combinam com você — depois deixe seu
-                    WhatsApp para a equipe retornar.
+                    Responda rápido, ganhe pontos e veja quantos imóveis
+                    combinam com você — depois deixe seu WhatsApp para a equipe
+                    retornar.
                   </p>
                   <button
                     type="button"
@@ -279,7 +300,9 @@ export function HuntModeOverlay() {
 
               {step === 1 && (
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Você busca compra ou aluguel?</h3>
+                  <h3 className="text-lg font-semibold">
+                    Você busca compra ou aluguel?
+                  </h3>
                   <div className="grid grid-cols-2 gap-3">
                     {(
                       [
@@ -299,7 +322,7 @@ export function HuntModeOverlay() {
                           "rounded-xl border py-4 text-sm font-medium transition",
                           mode === v
                             ? "border-emerald-500 bg-emerald-500/20 text-white"
-                            : "border-white/15 bg-white/5 text-zinc-300 hover:border-emerald-500/50"
+                            : "border-white/15 bg-white/5 text-zinc-300 hover:border-emerald-500/50",
                         )}
                       >
                         {label}
@@ -311,14 +334,25 @@ export function HuntModeOverlay() {
 
               {step === 2 && (
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Qual tipo de imóvel?</h3>
+                  <h3 className="text-lg font-semibold">
+                    Qual tipo de imóvel?
+                  </h3>
                   <div className="grid grid-cols-2 gap-2">
                     {(
                       [
                         "casa",
+                        "casa_condominio",
                         "apartamento",
+                        "duplex",
+                        "master",
+                        "flat",
+                        "cobertura",
+                        "terraco",
                         "terreno",
-                        "comercial",
+                        "sala",
+                        "galpao",
+                        "kitnet",
+                        "studio",
                       ] as PropertyKind[]
                     ).map((k) => (
                       <button
@@ -333,7 +367,7 @@ export function HuntModeOverlay() {
                           "rounded-xl border px-3 py-3 text-sm capitalize transition",
                           kind === k
                             ? "border-emerald-500 bg-emerald-500/20"
-                            : "border-white/15 bg-white/5 hover:border-emerald-500/40"
+                            : "border-white/15 bg-white/5 hover:border-emerald-500/40",
                         )}
                       >
                         {k}
@@ -345,7 +379,9 @@ export function HuntModeOverlay() {
 
               {step === 3 && (
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Mínimo de dormitórios</h3>
+                  <h3 className="text-lg font-semibold">
+                    Mínimo de dormitórios
+                  </h3>
                   <div className="flex flex-wrap gap-2">
                     {[1, 2, 3, 4, 5].map((n) => (
                       <button
@@ -360,7 +396,7 @@ export function HuntModeOverlay() {
                           "min-w-[3rem] rounded-lg border px-4 py-2 text-sm font-medium",
                           bedroomsMin === n
                             ? "border-emerald-500 bg-emerald-500/20"
-                            : "border-white/15 bg-white/5"
+                            : "border-white/15 bg-white/5",
                         )}
                       >
                         {n}+
@@ -372,7 +408,9 @@ export function HuntModeOverlay() {
 
               {step === 4 && (
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Faixa de preço (referência)</h3>
+                  <h3 className="text-lg font-semibold">
+                    Faixa de preço (referência)
+                  </h3>
                   <div className="flex flex-col gap-2">
                     {(
                       [
@@ -402,7 +440,9 @@ export function HuntModeOverlay() {
               {step === 5 && (
                 <div className="space-y-4">
                   {loadingMatches ? (
-                    <p className="text-center text-sm text-zinc-400">Buscando imóveis…</p>
+                    <p className="text-center text-sm text-zinc-400">
+                      Buscando imóveis…
+                    </p>
                   ) : (
                     <>
                       <p className="text-center text-2xl font-bold text-emerald-400">
@@ -419,10 +459,13 @@ export function HuntModeOverlay() {
                             }}
                           />
                           <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/90 to-transparent p-4">
-                            <p className="text-xs text-zinc-400">Preview do match</p>
+                            <p className="text-xs text-zinc-400">
+                              Preview do match
+                            </p>
                             <p className="font-semibold">{topMatch.title}</p>
                             <p className="text-xs text-zinc-500">
-                              {topMatch.address.neighborhood} · {topMatch.address.city}
+                              {topMatch.address.neighborhood} ·{" "}
+                              {topMatch.address.city}
                             </p>
                           </div>
                         </div>
@@ -441,15 +484,20 @@ export function HuntModeOverlay() {
                       </label>
                       <button
                         type="button"
-                        disabled={normalizePhoneBr(phone).length < 10 || submitting}
+                        disabled={
+                          normalizePhoneBr(phone).length < 10 || submitting
+                        }
                         onClick={handleFinishPhone}
                         className="w-full rounded-xl bg-emerald-500 py-3 text-sm font-semibold text-white disabled:opacity-40"
                       >
-                        {submitting ? "Enviando…" : "Concluir e registrar meu perfil"}
+                        {submitting
+                          ? "Enviando…"
+                          : "Concluir e registrar meu perfil"}
                       </button>
                       <p className="text-center text-[11px] text-zinc-500">
-                        Ao continuar, você autoriza o contato da imobiliária sobre este perfil. Os dados seguem a
-                        política de privacidade do site.
+                        Ao continuar, você autoriza o contato da imobiliária
+                        sobre este perfil. Os dados seguem a política de
+                        privacidade do site.
                       </p>
                     </>
                   )}
@@ -463,8 +511,9 @@ export function HuntModeOverlay() {
                   </p>
                   <h3 className="text-lg font-semibold">Perfil registrado!</h3>
                   <p className="text-sm text-zinc-400">
-                    Seus dados e preferências foram salvos. Nossa equipe pode retornar pelo número informado — você
-                    continua no site normalmente.
+                    Seus dados e preferências foram salvos. Nossa equipe pode
+                    retornar pelo número informado — você continua no site
+                    normalmente.
                   </p>
                   <button
                     type="button"

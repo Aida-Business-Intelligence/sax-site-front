@@ -16,7 +16,11 @@ import {
 } from "@/components/ui/select";
 import type { Property } from "@/types/realEstate";
 import { MapPin, ArrowLeftRight, Home, Tag, Bed } from "lucide-react";
-import { getProperties, getSiteConfig, type TransactionTypeOption } from "@/services/properties";
+import {
+  getProperties,
+  getSiteConfig,
+  type TransactionTypeOption,
+} from "@/services/properties";
 
 const FALLBACK_TRANSACTION_TYPES: TransactionTypeOption[] = [
   { value: "venda", label: "Venda" },
@@ -27,7 +31,24 @@ const FALLBACK_TRANSACTION_TYPES: TransactionTypeOption[] = [
 const schema = z.object({
   city: z.string().optional(),
   mode: z.string().default("venda"),
-  type: z.enum(["casa", "apartamento", "terreno", "comercial"]).optional(),
+  type: z
+    .enum([
+      "casa",
+      "casa_condominio",
+      "apartamento",
+      "duplex",
+      "master",
+      "flat",
+      "cobertura",
+      "terraco",
+      "terreno",
+      "sala",
+      "galpao",
+      "kitnet",
+      "studio",
+      "comercial",
+    ])
+    .optional(),
   bedrooms: z.string().optional(),
   priceRange: z
     .enum(["__all__", "lt500k", "500k-1m", "1m-2m", "gt2m"])
@@ -72,7 +93,9 @@ export default function HomeFilter({
   onSearch: onSearchOverride,
 }: HomeFilterProps) {
   const [properties, setProperties] = useState<Property[]>([]);
-  const [transactionTypes, setTransactionTypes] = useState<TransactionTypeOption[]>(FALLBACK_TRANSACTION_TYPES);
+  const [transactionTypes, setTransactionTypes] = useState<
+    TransactionTypeOption[]
+  >(FALLBACK_TRANSACTION_TYPES);
   useEffect(() => {
     getProperties().then(setProperties);
   }, []);
@@ -137,7 +160,7 @@ export default function HomeFilter({
   const tagOptions = useMemo(() => {
     const set = new Set<string>();
     (properties ?? []).forEach((p) =>
-      (p.amenities ?? []).forEach((a) => set.add(a))
+      (p.amenities ?? []).forEach((a) => set.add(a)),
     );
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [properties]);
@@ -153,7 +176,7 @@ export default function HomeFilter({
       { value: "__all__", label: "Todas" },
       ...builderOptions.map((name) => ({ value: name, label: name })),
     ],
-    [builderOptions]
+    [builderOptions],
   );
 
   // Labels para barra compacta (mobile)
@@ -211,28 +234,28 @@ export default function HomeFilter({
     if (onSearchOverride) {
       onSearchOverride(values);
     } else {
-    const params = new URLSearchParams();
-    if (values.city) params.set("city", values.city);
-    if (values.mode) params.set("mode", values.mode);
-    if (values.type) params.set("type", values.type);
-    if (values.bedrooms) params.set("bedrooms", values.bedrooms);
-    if (values.priceRange && values.priceRange !== "__all__")
-      params.set("priceRange", values.priceRange);
-    if (typeof values.priceMin === "number")
-      params.set("priceMin", String(values.priceMin));
-    if (typeof values.priceMax === "number")
-      params.set("priceMax", String(values.priceMax));
-    if (typeof values.areaMin === "number")
-      params.set("areaMin", String(values.areaMin));
-    if (typeof values.areaMax === "number")
-      params.set("areaMax", String(values.areaMax));
-    if (values.status && values.status !== "__all__")
-      params.set("status", values.status);
-    if (values.tag && values.tag.length)
-      params.set("tag", values.tag.join(","));
-    if (values.builder && values.builder !== "__all__")
-      params.set("builder", values.builder);
-    router.push(`/imoveis?${params.toString()}`);
+      const params = new URLSearchParams();
+      if (values.city) params.set("city", values.city);
+      if (values.mode) params.set("mode", values.mode);
+      if (values.type) params.set("type", values.type);
+      if (values.bedrooms) params.set("bedrooms", values.bedrooms);
+      if (values.priceRange && values.priceRange !== "__all__")
+        params.set("priceRange", values.priceRange);
+      if (typeof values.priceMin === "number")
+        params.set("priceMin", String(values.priceMin));
+      if (typeof values.priceMax === "number")
+        params.set("priceMax", String(values.priceMax));
+      if (typeof values.areaMin === "number")
+        params.set("areaMin", String(values.areaMin));
+      if (typeof values.areaMax === "number")
+        params.set("areaMax", String(values.areaMax));
+      if (values.status && values.status !== "__all__")
+        params.set("status", values.status);
+      if (values.tag && values.tag.length)
+        params.set("tag", values.tag.join(","));
+      if (values.builder && values.builder !== "__all__")
+        params.set("builder", values.builder);
+      router.push(`/imoveis?${params.toString()}`);
     }
   }
 
@@ -379,10 +402,22 @@ export default function HomeFilter({
                         <SelectContent>
                           <SelectItem value="__all__">Todos</SelectItem>
                           <SelectItem value="casa">Casa</SelectItem>
+                          <SelectItem value="casa_condominio">
+                            Casa Condomínio
+                          </SelectItem>
                           <SelectItem value="apartamento">
                             Apartamento
                           </SelectItem>
+                          <SelectItem value="duplex">Duplex</SelectItem>
+                          <SelectItem value="master">Master</SelectItem>
+                          <SelectItem value="flat">Flat</SelectItem>
+                          <SelectItem value="cobertura">Cobertura</SelectItem>
+                          <SelectItem value="terraco">Terraço</SelectItem>
                           <SelectItem value="terreno">Terreno</SelectItem>
+                          <SelectItem value="sala">Sala</SelectItem>
+                          <SelectItem value="galpao">Galpão</SelectItem>
+                          <SelectItem value="kitnet">Kitnet</SelectItem>
+                          <SelectItem value="studio">Studio</SelectItem>
                           <SelectItem value="comercial">Comercial</SelectItem>
                         </SelectContent>
                       </Select>
@@ -491,13 +526,19 @@ export default function HomeFilter({
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="__all__">Todos</SelectItem>
-                              <SelectItem value="na-planta">Na planta</SelectItem>
+                              <SelectItem value="na-planta">
+                                Na planta
+                              </SelectItem>
                               <SelectItem value="pronto">Pronto</SelectItem>
-                              <SelectItem value="mobiliado">Mobiliado</SelectItem>
+                              <SelectItem value="mobiliado">
+                                Mobiliado
+                              </SelectItem>
                               <SelectItem value="sem-mobilia">
                                 Sem mobília
                               </SelectItem>
-                              <SelectItem value="reformado">Reformado</SelectItem>
+                              <SelectItem value="reformado">
+                                Reformado
+                              </SelectItem>
                               <SelectItem value="para-reformar">
                                 Para reformar
                               </SelectItem>
@@ -568,8 +609,8 @@ export default function HomeFilter({
                                     if (active) {
                                       field.onChange(
                                         selected.filter(
-                                          (t: string) => t !== name
-                                        )
+                                          (t: string) => t !== name,
+                                        ),
                                       );
                                     } else {
                                       field.onChange([
@@ -629,15 +670,15 @@ export default function HomeFilter({
       <div className="2xl:hidden">
         {!hideMobileTrigger &&
           (mobileTriggerPosition === "bottom" ? (
-        <div className="fixed inset-x-0 bottom-36 z-[55] flex justify-center px-4">
-          <button
-            type="button"
-            onClick={() => setMobileOpen(true)}
-            className="w-full max-w-xs rounded-full bg-zinc-900 px-5 py-3 text-sm font-medium text-white shadow-md ring-1 ring-black/5 dark:bg-white dark:text-zinc-900"
-          >
-            Filtrar Imóveis
-          </button>
-        </div>
+            <div className="fixed inset-x-0 bottom-36 z-[55] flex justify-center px-4">
+              <button
+                type="button"
+                onClick={() => setMobileOpen(true)}
+                className="w-full max-w-xs rounded-full bg-zinc-900 px-5 py-3 text-sm font-medium text-white shadow-md ring-1 ring-black/5 dark:bg-white dark:text-zinc-900"
+              >
+                Filtrar Imóveis
+              </button>
+            </div>
           ) : (
             <div className="px-4 mt-0 mb-4">
               <button
@@ -665,473 +706,207 @@ export default function HomeFilter({
                 exit={{ opacity: 0 }}
                 onClick={() => setMobileOpen(false)}
               />
-            <motion.div
-              className="absolute right-0 top-0 h-full w-80 max-w-[90%] rounded-l-2xl border border-white/30 bg-white/20 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-zinc-800/25"
+              <motion.div
+                className="absolute right-0 top-0 h-full w-80 max-w-[90%] rounded-l-2xl border border-white/30 bg-white/20 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-zinc-800/25"
                 initial={{ x: 320 }}
                 animate={{ x: 0 }}
                 exit={{ x: 320 }}
                 transition={{ type: "spring", stiffness: 320, damping: 28 }}
               >
-              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/20 px-4 py-3 rounded-tl-2xl text-white">
-                <span className="text-sm font-semibold tracking-wide">Filtros</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      form.reset({
-                        mode: defaultMode,
-                        priceRange: "__all__",
-                        status: "__all__",
-                      })
-                    }
-                    className="rounded-md px-2 py-1 text-xs text-white/80 hover:bg-white/20"
-                  >
-                    Limpar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMobileOpen(false)}
-                    className="rounded-md px-2 py-1 text-xs text-white/80 hover:bg-white/20"
-                  >
-                    Fechar
-                  </button>
-                </div>
+                <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/20 px-4 py-3 rounded-tl-2xl text-white">
+                  <span className="text-sm font-semibold tracking-wide">
+                    Filtros
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        form.reset({
+                          mode: defaultMode,
+                          priceRange: "__all__",
+                          status: "__all__",
+                        })
+                      }
+                      className="rounded-md px-2 py-1 text-xs text-white/80 hover:bg-white/20"
+                    >
+                      Limpar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMobileOpen(false)}
+                      className="rounded-md px-2 py-1 text-xs text-white/80 hover:bg-white/20"
+                    >
+                      Fechar
+                    </button>
+                  </div>
                 </div>
                 <div className="h-[calc(100dvh-112px)] overflow-y-auto px-4 py-4">
-                <Form {...form}>
-                  <form className="grid grid-cols-1 gap-3">
-                    {/* Localização */}
-                    <FormField
-                      control={form.control}
-                      name="city"
-                      render={({ field }) => (
-                        <FormItem>
-                          <span className="block px-1 text-[10px] font-medium text-white">
-                            Localização
-                          </span>
-                          <FormControl>
-                            <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
-                              <MapPin
-                                className="h-4 w-4 text-white/70 shrink-0"
-                                strokeWidth={2.25}
-                              />
-                              <Select
-                                value={field.value ?? undefined}
-                                onValueChange={(val) =>
-                                  field.onChange(
-                                    val === "__all__" ? undefined : val
-                                  )
-                                }
-                                className="min-w-0 flex-1 text-white border-0 bg-transparent px-0"
-                                placeholderClassName="text-white/70"
-                                valueClassName="text-white"
-                                caretClassName="text-white/60"
-                                menuClassName="z-[95] w-[340px] bg-white"
-                              >
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Localização" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="__all__">Todos</SelectItem>
-                                  {cities.map((opt) => (
-                                    <SelectItem
-                                      key={opt.value}
-                                      value={opt.value}
-                                    >
-                                      {opt.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    {/* Construtora */}
-                    <FormField
-                      control={form.control}
-                      name="builder"
-                      render={({ field }) => (
-                        <FormItem>
-                          <span className="block px-1 text-[10px] font-medium text-white">
-                            Construtora
-                          </span>
-                          <FormControl>
-                            <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
-                              <Home
-                                className="text-white/70 shrink-0"
-                                strokeWidth={2.25}
-                                size={18}
-                              />
-                              <Select
-                                value={field.value ?? "__all__"}
-                                onValueChange={field.onChange}
-                                className="min-w-0 flex-1 text-white border-0 bg-transparent px-0"
-                                placeholderClassName="text-white/70"
-                                valueClassName="text-white"
-                                caretClassName="text-white/60"
-                                menuClassName="z-[95] w-[min(100vw-2rem,320px)] bg-white"
-                                items={builderSelectItems}
-                                placeholder="Construtora"
-                                menuMinWidth={200}
-                              >
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Construtora" />
-                                </SelectTrigger>
-                              </Select>
-                            </div>
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    {/* Transação */}
-                    <FormField
-                      control={form.control}
-                      name="mode"
-                      render={({ field }) => (
-                        <FormItem>
-                          <span className="block px-1 text-[10px] font-medium text-white">
-                            Tipo de Transação
-                          </span>
-                          <FormControl>
-                            <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
-                              <ArrowLeftRight className="h-4 w-4 shrink-0 text-white/70" />
-                              <Select
-                                value={field.value ?? defaultMode}
-                                onValueChange={field.onChange}
-                                className="min-w-0 flex-1 text-white border-0 bg-transparent px-0"
-                                placeholderClassName="text-white/70"
-                                valueClassName="text-white"
-                                caretClassName="text-white/60"
-                                menuClassName="z-[95] w-[min(100vw-2rem,280px)] bg-white"
-                                menuMinWidth={220}
-                                items={transactionTypes.map((opt) => ({
-                                  value: opt.value,
-                                  label: opt.label,
-                                }))}
-                                placeholder="Transação"
-                              >
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Transação" />
-                                </SelectTrigger>
-                              </Select>
-                            </div>
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    {/* Tipo */}
-                    <FormField
-                      control={form.control}
-                      name="type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <span className="block px-1 text-[10px] font-medium text-white">
-                            Tipo
-                          </span>
-                          <FormControl>
-                            <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
-                              <Home className="h-4 w-4 shrink-0 text-white/70" />
-                              <Select
-                                value={field.value ?? undefined}
-                                onValueChange={(val) =>
-                                  field.onChange(
-                                    val === "__all__" ? undefined : val
-                                  )
-                                }
-                                className="min-w-0 flex-1 text-white border-0 bg-transparent px-0"
-                                placeholderClassName="text-white/70"
-                                valueClassName="text-white"
-                                caretClassName="text-white/60"
-                                menuClassName="z-[95] w-[184px] bg-white"
-                              >
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Tipo" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="__all__">Todos</SelectItem>
-                                  <SelectItem value="casa">Casa</SelectItem>
-                                  <SelectItem value="apartamento">
-                                    Apartamento
-                                  </SelectItem>
-                                  <SelectItem value="terreno">
-                                    Terreno
-                                  </SelectItem>
-                                  <SelectItem value="comercial">
-                                    Comercial
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    {/* Quartos */}
-                    <FormField
-                      control={form.control}
-                      name="bedrooms"
-                      render={({ field }) => (
-                        <FormItem>
-                          <span className="block px-1 text-[10px] font-medium text-white">
-                            Quartos
-                          </span>
-                          <FormControl>
-                            <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
-                              <Bed className="h-4 w-4 shrink-0 text-white/70" />
-                              <Select
-                                value={field.value ?? undefined}
-                                onValueChange={(val) =>
-                                  field.onChange(
-                                    val === "__all__" ? undefined : val
-                                  )
-                                }
-                                className="min-w-0 flex-1 text-white border-0 bg-transparent px-0"
-                                placeholderClassName="text-white/70"
-                                valueClassName="text-white"
-                                caretClassName="text-white/60"
-                                menuClassName="z-[95] w-full bg-white"
-                              >
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Quartos" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="__all__">Todos</SelectItem>
-                                  <SelectItem value="1">1+</SelectItem>
-                                  <SelectItem value="2">2+</SelectItem>
-                                  <SelectItem value="3">3+</SelectItem>
-                                  <SelectItem value="4">4+</SelectItem>
-                                  <SelectItem value="5">5+</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    {/* Preço (slider duplo) */}
-                    <div>
-                      <span className="block px-1 text-[10px] font-medium text-white">
-                        Preço
-                      </span>
-                      <div className="rounded-lg border border-white/30 bg-white/15 px-3 py-3 text-white backdrop-blur-sm">
-                        {(() => {
-                          const min = 0;
-                          const max = 3000000;
-                          const step = 50000;
-                          const vMin = form.watch("priceMin") ?? 0;
-                          const vMax = form.watch("priceMax") ?? 1500000;
-                          const left = ((vMin - min) / (max - min)) * 100;
-                          const right =
-                            100 - ((vMax - min) / (max - min)) * 100;
-                          return (
-                            <div>
-                              <div className="relative h-24">
-                                {/* Ícone decorativo sobre a faixa selecionada */}
-                                <div className="pointer-events-none absolute bottom-7 left-1/2 -translate-x-1/2">
-                                  <img
-                                    src="/assets/icons/Union.png"
-                                    alt="Distribuição de preços"
-                                    className="h-10 w-[180px] object-contain opacity-95 dark:opacity-90"
-                                    style={{
-                                      filter: "brightness(0) saturate(100%)",
-                                    }}
-                                    draggable={false}
-                                  />
-                                </div>
-                                <div className="absolute left-0 right-0 bottom-5 h-[1px] bg-zinc-300 dark:bg-zinc-700" />
-                                <div
-                                  className="absolute bottom-5 h-[2px] rounded bg-teal-500"
-                                  style={{
-                                    left: `${left}%`,
-                                    right: `${right}%`,
-                                  }}
-                                />
-                                <input
-                                  type="range"
-                                  min={min}
-                                  max={max}
-                                  step={step}
-                                  value={vMin}
-                                  onChange={(e) => {
-                                    const n = clamp(
-                                      parseInt(e.target.value, 10),
-                                      min,
-                                      max
-                                    );
-                                    const adjusted = Math.min(
-                                      n,
-                                      (form.getValues("priceMax") ?? vMax) -
-                                        step
-                                    );
-                                    form.setValue("priceMin", adjusted, {
-                                      shouldDirty: true,
-                                    });
-                                  }}
-                                  className="range-thumb-price pointer-events-auto absolute left-0 bottom-5 h-6 w-full appearance-none bg-transparent"
-                                />
-                                <input
-                                  type="range"
-                                  min={min}
-                                  max={max}
-                                  step={step}
-                                  value={vMax}
-                                  onChange={(e) => {
-                                    const n = clamp(
-                                      parseInt(e.target.value, 10),
-                                      min,
-                                      max
-                                    );
-                                    const adjusted = Math.max(
-                                      n,
-                                      (form.getValues("priceMin") ?? vMin) +
-                                        step
-                                    );
-                                    form.setValue("priceMax", adjusted, {
-                                      shouldDirty: true,
-                                    });
-                                  }}
-                                  className="range-thumb-price pointer-events-auto absolute left-0 bottom-5 h-6 w-full appearance-none bg-transparent"
-                                />
-                              </div>
-                              <div className="mt-2 flex justify-between text-[12px]">
-                                <span className="text-white/80">
-                                  {formatBRL(vMin)}
-                                </span>
-                                <span className="font-semibold text-white">
-                                  {formatBRL(vMax)}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    </div>
-
-                    {/* Tamanho do imóvel (slider duplo) */}
-                    <div>
-                      <span className="block px-1 text-[10px] font-medium text-white">
-                        Tamanho do imóvel
-                      </span>
-                      <div className="rounded-lg border border-white/30 bg-white/15 px-3 py-3 text-white backdrop-blur-sm">
-                        {(() => {
-                          const min = 30;
-                          const max = 500;
-                          const step = 5;
-                          const vMin = form.watch("areaMin") ?? min;
-                          const vMax = form.watch("areaMax") ?? 200;
-                          const left = ((vMin - min) / (max - min)) * 100;
-                          const right =
-                            100 - ((vMax - min) / (max - min)) * 100;
-                          return (
-                            <div>
-                              <div className="mb-2 flex justify-between text-[12px] text-white/90">
-                                <span>{vMin} m²</span>
-                                <span className="font-medium text-white">
-                                  {vMax} m²
-                                </span>
-                              </div>
-                              <div className="relative h-10">
-                                <div className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-zinc-300 dark:bg-zinc-700" />
-                                <div
-                                  className="absolute top-1/2 h-px -translate-y-1/2 rounded bg-teal-500"
-                                  style={{
-                                    left: `${left}%`,
-                                    right: `${right}%`,
-                                  }}
-                                />
-                                <input
-                                  type="range"
-                                  min={min}
-                                  max={max}
-                                  step={step}
-                                  value={vMin}
-                                  onChange={(e) => {
-                                    const n = clamp(
-                                      parseInt(e.target.value, 10),
-                                      min,
-                                      max
-                                    );
-                                    const adjusted = Math.min(
-                                      n,
-                                      (form.getValues("areaMax") ?? vMax) - step
-                                    );
-                                    form.setValue("areaMin", adjusted, {
-                                      shouldDirty: true,
-                                    });
-                                  }}
-                                  className="range-thumb-area pointer-events-auto absolute left-0 top-1/2 -translate-y-1/2 h-6 w-full appearance-none bg-transparent"
-                                />
-                                <input
-                                  type="range"
-                                  min={min}
-                                  max={max}
-                                  step={step}
-                                  value={vMax}
-                                  onChange={(e) => {
-                                    const n = clamp(
-                                      parseInt(e.target.value, 10),
-                                      min,
-                                      max
-                                    );
-                                    const adjusted = Math.max(
-                                      n,
-                                      (form.getValues("areaMin") ?? vMin) + step
-                                    );
-                                    form.setValue("areaMax", adjusted, {
-                                      shouldDirty: true,
-                                    });
-                                  }}
-                                  className="range-thumb-area pointer-events-auto absolute left-0 top-1/2 -translate-y-1/2 h-6 w-full appearance-none bg-transparent"
-                                />
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    </div>
-
-                    {!hideStatus ? (
+                  <Form {...form}>
+                    <form className="grid grid-cols-1 gap-3">
+                      {/* Localização */}
                       <FormField
                         control={form.control}
-                        name="status"
+                        name="city"
                         render={({ field }) => (
                           <FormItem>
                             <span className="block px-1 text-[10px] font-medium text-white">
-                              Status
+                              Localização
                             </span>
                             <FormControl>
                               <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
-                                <Tag className="h-4 w-4 text-white/70" />
+                                <MapPin
+                                  className="h-4 w-4 text-white/70 shrink-0"
+                                  strokeWidth={2.25}
+                                />
+                                <Select
+                                  value={field.value ?? undefined}
+                                  onValueChange={(val) =>
+                                    field.onChange(
+                                      val === "__all__" ? undefined : val,
+                                    )
+                                  }
+                                  className="min-w-0 flex-1 text-white border-0 bg-transparent px-0"
+                                  placeholderClassName="text-white/70"
+                                  valueClassName="text-white"
+                                  caretClassName="text-white/60"
+                                  menuClassName="z-[95] w-[340px] bg-white"
+                                >
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Localização" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__all__">
+                                      Todos
+                                    </SelectItem>
+                                    {cities.map((opt) => (
+                                      <SelectItem
+                                        key={opt.value}
+                                        value={opt.value}
+                                      >
+                                        {opt.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      {/* Construtora */}
+                      <FormField
+                        control={form.control}
+                        name="builder"
+                        render={({ field }) => (
+                          <FormItem>
+                            <span className="block px-1 text-[10px] font-medium text-white">
+                              Construtora
+                            </span>
+                            <FormControl>
+                              <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
+                                <Home
+                                  className="text-white/70 shrink-0"
+                                  strokeWidth={2.25}
+                                  size={18}
+                                />
                                 <Select
                                   value={field.value ?? "__all__"}
                                   onValueChange={field.onChange}
                                   className="min-w-0 flex-1 text-white border-0 bg-transparent px-0"
                                   placeholderClassName="text-white/70"
+                                  valueClassName="text-white"
                                   caretClassName="text-white/60"
-                                  menuClassName="z-[95] w-full bg-white"
+                                  menuClassName="z-[95] w-[min(100vw-2rem,320px)] bg-white"
+                                  items={builderSelectItems}
+                                  placeholder="Construtora"
+                                  menuMinWidth={200}
                                 >
                                   <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Selecione" />
+                                    <SelectValue placeholder="Construtora" />
+                                  </SelectTrigger>
+                                </Select>
+                              </div>
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      {/* Transação */}
+                      <FormField
+                        control={form.control}
+                        name="mode"
+                        render={({ field }) => (
+                          <FormItem>
+                            <span className="block px-1 text-[10px] font-medium text-white">
+                              Tipo de Transação
+                            </span>
+                            <FormControl>
+                              <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
+                                <ArrowLeftRight className="h-4 w-4 shrink-0 text-white/70" />
+                                <Select
+                                  value={field.value ?? defaultMode}
+                                  onValueChange={field.onChange}
+                                  className="min-w-0 flex-1 text-white border-0 bg-transparent px-0"
+                                  placeholderClassName="text-white/70"
+                                  valueClassName="text-white"
+                                  caretClassName="text-white/60"
+                                  menuClassName="z-[95] w-[min(100vw-2rem,280px)] bg-white"
+                                  menuMinWidth={220}
+                                  items={transactionTypes.map((opt) => ({
+                                    value: opt.value,
+                                    label: opt.label,
+                                  }))}
+                                  placeholder="Transação"
+                                >
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Transação" />
+                                  </SelectTrigger>
+                                </Select>
+                              </div>
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      {/* Tipo */}
+                      <FormField
+                        control={form.control}
+                        name="type"
+                        render={({ field }) => (
+                          <FormItem>
+                            <span className="block px-1 text-[10px] font-medium text-white">
+                              Tipo
+                            </span>
+                            <FormControl>
+                              <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
+                                <Home className="h-4 w-4 shrink-0 text-white/70" />
+                                <Select
+                                  value={field.value ?? undefined}
+                                  onValueChange={(val) =>
+                                    field.onChange(
+                                      val === "__all__" ? undefined : val,
+                                    )
+                                  }
+                                  className="min-w-0 flex-1 text-white border-0 bg-transparent px-0"
+                                  placeholderClassName="text-white/70"
+                                  valueClassName="text-white"
+                                  caretClassName="text-white/60"
+                                  menuClassName="z-[95] w-[184px] bg-white"
+                                >
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Tipo" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="__all__">Todos</SelectItem>
-                                    <SelectItem value="na-planta">
-                                      Na planta
+                                    <SelectItem value="__all__">
+                                      Todos
                                     </SelectItem>
-                                    <SelectItem value="pronto">Pronto</SelectItem>
-                                    <SelectItem value="mobiliado">
-                                      Mobiliado
+                                    <SelectItem value="casa">Casa</SelectItem>
+                                    <SelectItem value="apartamento">
+                                      Apartamento
                                     </SelectItem>
-                                    <SelectItem value="sem-mobilia">
-                                      Sem mobília
+                                    <SelectItem value="terreno">
+                                      Terreno
                                     </SelectItem>
-                                    <SelectItem value="reformado">
-                                      Reformado
-                                    </SelectItem>
-                                    <SelectItem value="para-reformar">
-                                      Para reformar
+                                    <SelectItem value="comercial">
+                                      Comercial
                                     </SelectItem>
                                   </SelectContent>
                                 </Select>
@@ -1140,124 +915,404 @@ export default function HomeFilter({
                           </FormItem>
                         )}
                       />
-                    ) : null}
-                    {/* Tags (multi-select) */}
-                    <FormField
-                      control={form.control}
-                      name="tag"
-                      render={({ field }) => {
-                        const selected = field.value ?? [];
-                        return (
+                      {/* Quartos */}
+                      <FormField
+                        control={form.control}
+                        name="bedrooms"
+                        render={({ field }) => (
                           <FormItem>
                             <span className="block px-1 text-[10px] font-medium text-white">
-                              Tags
+                              Quartos
                             </span>
                             <FormControl>
-                              <div ref={tagsMenuRef} className="relative">
-                                <button
-                                  type="button"
-                                  onClick={() => setTagsOpen((v) => !v)}
-                                  className="flex h-11 w-full items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 text-left text-white backdrop-blur-sm"
+                              <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
+                                <Bed className="h-4 w-4 shrink-0 text-white/70" />
+                                <Select
+                                  value={field.value ?? undefined}
+                                  onValueChange={(val) =>
+                                    field.onChange(
+                                      val === "__all__" ? undefined : val,
+                                    )
+                                  }
+                                  className="min-w-0 flex-1 text-white border-0 bg-transparent px-0"
+                                  placeholderClassName="text-white/70"
+                                  valueClassName="text-white"
+                                  caretClassName="text-white/60"
+                                  menuClassName="z-[95] w-full bg-white"
                                 >
-                                  <Tag className="h-4 w-4 text-white/70" />
-                                  <span
-                                    className={[
-                                      "block w-full truncate",
-                                      selected.length === 0
-                                        ? "text-white/60"
-                                        : "text-white",
-                                    ].join(" ")}
-                                  >
-                                    {selected.length === 0
-                                      ? "Tags"
-                                      : `${selected[0]}${
-                                          selected.length > 1
-                                            ? ` +${selected.length - 1}`
-                                            : ""
-                                        }`}
-                                  </span>
-                                  <svg
-                                    aria-hidden="true"
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 24 24"
-                                    className="ml-2 text-white/60"
-                                  >
-                                    <path
-                                      fill="currentColor"
-                                      d="M7 10l5 5 5-5z"
-                                    />
-                                  </svg>
-                                </button>
-
-                                {tagsOpen ? (
-                                  <div className="absolute z-[95] mt-2 max-h-60 w-[260px] overflow-auto rounded-lg border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
-                                    {tagOptions.map((name) => {
-                                      const active = selected.includes(name);
-                                      return (
-                                        <button
-                                          type="button"
-                                          key={name}
-                                          onClick={() => {
-                                            if (active) {
-                                              field.onChange(
-                                                selected.filter(
-                                                  (t: string) => t !== name
-                                                )
-                                              );
-                                            } else {
-                                              field.onChange([
-                                                ...(selected as string[]),
-                                                name,
-                                              ]);
-                                            }
-                                          }}
-                                          className={[
-                                            "flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition",
-                                            active
-                                              ? "bg-zinc-100 font-medium dark:bg-zinc-800"
-                                              : "hover:bg-zinc-100 dark:hover:bg-zinc-800",
-                                          ].join(" ")}
-                                        >
-                                          <span>{name}</span>
-                                          {active ? (
-                                            <svg
-                                              width="16"
-                                              height="16"
-                                              viewBox="0 0 24 24"
-                                              className="text-teal-600"
-                                            >
-                                              <path
-                                                fill="currentColor"
-                                                d="M9 16.2l-3.5-3.5L4 14.2 9 19l12-12-1.5-1.5z"
-                                              />
-                                            </svg>
-                                          ) : null}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                ) : null}
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Quartos" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__all__">
+                                      Todos
+                                    </SelectItem>
+                                    <SelectItem value="1">1+</SelectItem>
+                                    <SelectItem value="2">2+</SelectItem>
+                                    <SelectItem value="3">3+</SelectItem>
+                                    <SelectItem value="4">4+</SelectItem>
+                                    <SelectItem value="5">5+</SelectItem>
+                                  </SelectContent>
+                                </Select>
                               </div>
                             </FormControl>
                           </FormItem>
-                        );
-                      }}
-                    />
-                  </form>
-                </Form>
+                        )}
+                      />
+                      {/* Preço (slider duplo) */}
+                      <div>
+                        <span className="block px-1 text-[10px] font-medium text-white">
+                          Preço
+                        </span>
+                        <div className="rounded-lg border border-white/30 bg-white/15 px-3 py-3 text-white backdrop-blur-sm">
+                          {(() => {
+                            const min = 0;
+                            const max = 3000000;
+                            const step = 50000;
+                            const vMin = form.watch("priceMin") ?? 0;
+                            const vMax = form.watch("priceMax") ?? 1500000;
+                            const left = ((vMin - min) / (max - min)) * 100;
+                            const right =
+                              100 - ((vMax - min) / (max - min)) * 100;
+                            return (
+                              <div>
+                                <div className="relative h-24">
+                                  {/* Ícone decorativo sobre a faixa selecionada */}
+                                  <div className="pointer-events-none absolute bottom-7 left-1/2 -translate-x-1/2">
+                                    <img
+                                      src="/assets/icons/Union.png"
+                                      alt="Distribuição de preços"
+                                      className="h-10 w-[180px] object-contain opacity-95 dark:opacity-90"
+                                      style={{
+                                        filter: "brightness(0) saturate(100%)",
+                                      }}
+                                      draggable={false}
+                                    />
+                                  </div>
+                                  <div className="absolute left-0 right-0 bottom-5 h-[1px] bg-zinc-300 dark:bg-zinc-700" />
+                                  <div
+                                    className="absolute bottom-5 h-[2px] rounded bg-teal-500"
+                                    style={{
+                                      left: `${left}%`,
+                                      right: `${right}%`,
+                                    }}
+                                  />
+                                  <input
+                                    type="range"
+                                    min={min}
+                                    max={max}
+                                    step={step}
+                                    value={vMin}
+                                    onChange={(e) => {
+                                      const n = clamp(
+                                        parseInt(e.target.value, 10),
+                                        min,
+                                        max,
+                                      );
+                                      const adjusted = Math.min(
+                                        n,
+                                        (form.getValues("priceMax") ?? vMax) -
+                                          step,
+                                      );
+                                      form.setValue("priceMin", adjusted, {
+                                        shouldDirty: true,
+                                      });
+                                    }}
+                                    className="range-thumb-price pointer-events-auto absolute left-0 bottom-5 h-6 w-full appearance-none bg-transparent"
+                                  />
+                                  <input
+                                    type="range"
+                                    min={min}
+                                    max={max}
+                                    step={step}
+                                    value={vMax}
+                                    onChange={(e) => {
+                                      const n = clamp(
+                                        parseInt(e.target.value, 10),
+                                        min,
+                                        max,
+                                      );
+                                      const adjusted = Math.max(
+                                        n,
+                                        (form.getValues("priceMin") ?? vMin) +
+                                          step,
+                                      );
+                                      form.setValue("priceMax", adjusted, {
+                                        shouldDirty: true,
+                                      });
+                                    }}
+                                    className="range-thumb-price pointer-events-auto absolute left-0 bottom-5 h-6 w-full appearance-none bg-transparent"
+                                  />
+                                </div>
+                                <div className="mt-2 flex justify-between text-[12px]">
+                                  <span className="text-white/80">
+                                    {formatBRL(vMin)}
+                                  </span>
+                                  <span className="font-semibold text-white">
+                                    {formatBRL(vMax)}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* Tamanho do imóvel (slider duplo) */}
+                      <div>
+                        <span className="block px-1 text-[10px] font-medium text-white">
+                          Tamanho do imóvel
+                        </span>
+                        <div className="rounded-lg border border-white/30 bg-white/15 px-3 py-3 text-white backdrop-blur-sm">
+                          {(() => {
+                            const min = 30;
+                            const max = 500;
+                            const step = 5;
+                            const vMin = form.watch("areaMin") ?? min;
+                            const vMax = form.watch("areaMax") ?? 200;
+                            const left = ((vMin - min) / (max - min)) * 100;
+                            const right =
+                              100 - ((vMax - min) / (max - min)) * 100;
+                            return (
+                              <div>
+                                <div className="mb-2 flex justify-between text-[12px] text-white/90">
+                                  <span>{vMin} m²</span>
+                                  <span className="font-medium text-white">
+                                    {vMax} m²
+                                  </span>
+                                </div>
+                                <div className="relative h-10">
+                                  <div className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-zinc-300 dark:bg-zinc-700" />
+                                  <div
+                                    className="absolute top-1/2 h-px -translate-y-1/2 rounded bg-teal-500"
+                                    style={{
+                                      left: `${left}%`,
+                                      right: `${right}%`,
+                                    }}
+                                  />
+                                  <input
+                                    type="range"
+                                    min={min}
+                                    max={max}
+                                    step={step}
+                                    value={vMin}
+                                    onChange={(e) => {
+                                      const n = clamp(
+                                        parseInt(e.target.value, 10),
+                                        min,
+                                        max,
+                                      );
+                                      const adjusted = Math.min(
+                                        n,
+                                        (form.getValues("areaMax") ?? vMax) -
+                                          step,
+                                      );
+                                      form.setValue("areaMin", adjusted, {
+                                        shouldDirty: true,
+                                      });
+                                    }}
+                                    className="range-thumb-area pointer-events-auto absolute left-0 top-1/2 -translate-y-1/2 h-6 w-full appearance-none bg-transparent"
+                                  />
+                                  <input
+                                    type="range"
+                                    min={min}
+                                    max={max}
+                                    step={step}
+                                    value={vMax}
+                                    onChange={(e) => {
+                                      const n = clamp(
+                                        parseInt(e.target.value, 10),
+                                        min,
+                                        max,
+                                      );
+                                      const adjusted = Math.max(
+                                        n,
+                                        (form.getValues("areaMin") ?? vMin) +
+                                          step,
+                                      );
+                                      form.setValue("areaMax", adjusted, {
+                                        shouldDirty: true,
+                                      });
+                                    }}
+                                    className="range-thumb-area pointer-events-auto absolute left-0 top-1/2 -translate-y-1/2 h-6 w-full appearance-none bg-transparent"
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+
+                      {!hideStatus ? (
+                        <FormField
+                          control={form.control}
+                          name="status"
+                          render={({ field }) => (
+                            <FormItem>
+                              <span className="block px-1 text-[10px] font-medium text-white">
+                                Status
+                              </span>
+                              <FormControl>
+                                <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 backdrop-blur-sm">
+                                  <Tag className="h-4 w-4 text-white/70" />
+                                  <Select
+                                    value={field.value ?? "__all__"}
+                                    onValueChange={field.onChange}
+                                    className="min-w-0 flex-1 text-white border-0 bg-transparent px-0"
+                                    placeholderClassName="text-white/70"
+                                    caretClassName="text-white/60"
+                                    menuClassName="z-[95] w-full bg-white"
+                                  >
+                                    <SelectTrigger className="w-full">
+                                      <SelectValue placeholder="Selecione" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="__all__">
+                                        Todos
+                                      </SelectItem>
+                                      <SelectItem value="na-planta">
+                                        Na planta
+                                      </SelectItem>
+                                      <SelectItem value="pronto">
+                                        Pronto
+                                      </SelectItem>
+                                      <SelectItem value="mobiliado">
+                                        Mobiliado
+                                      </SelectItem>
+                                      <SelectItem value="sem-mobilia">
+                                        Sem mobília
+                                      </SelectItem>
+                                      <SelectItem value="reformado">
+                                        Reformado
+                                      </SelectItem>
+                                      <SelectItem value="para-reformar">
+                                        Para reformar
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      ) : null}
+                      {/* Tags (multi-select) */}
+                      <FormField
+                        control={form.control}
+                        name="tag"
+                        render={({ field }) => {
+                          const selected = field.value ?? [];
+                          return (
+                            <FormItem>
+                              <span className="block px-1 text-[10px] font-medium text-white">
+                                Tags
+                              </span>
+                              <FormControl>
+                                <div ref={tagsMenuRef} className="relative">
+                                  <button
+                                    type="button"
+                                    onClick={() => setTagsOpen((v) => !v)}
+                                    className="flex h-11 w-full items-center gap-2 rounded-lg border border-white/30 bg-white/15 px-3 text-left text-white backdrop-blur-sm"
+                                  >
+                                    <Tag className="h-4 w-4 text-white/70" />
+                                    <span
+                                      className={[
+                                        "block w-full truncate",
+                                        selected.length === 0
+                                          ? "text-white/60"
+                                          : "text-white",
+                                      ].join(" ")}
+                                    >
+                                      {selected.length === 0
+                                        ? "Tags"
+                                        : `${selected[0]}${
+                                            selected.length > 1
+                                              ? ` +${selected.length - 1}`
+                                              : ""
+                                          }`}
+                                    </span>
+                                    <svg
+                                      aria-hidden="true"
+                                      width="16"
+                                      height="16"
+                                      viewBox="0 0 24 24"
+                                      className="ml-2 text-white/60"
+                                    >
+                                      <path
+                                        fill="currentColor"
+                                        d="M7 10l5 5 5-5z"
+                                      />
+                                    </svg>
+                                  </button>
+
+                                  {tagsOpen ? (
+                                    <div className="absolute z-[95] mt-2 max-h-60 w-[260px] overflow-auto rounded-lg border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+                                      {tagOptions.map((name) => {
+                                        const active = selected.includes(name);
+                                        return (
+                                          <button
+                                            type="button"
+                                            key={name}
+                                            onClick={() => {
+                                              if (active) {
+                                                field.onChange(
+                                                  selected.filter(
+                                                    (t: string) => t !== name,
+                                                  ),
+                                                );
+                                              } else {
+                                                field.onChange([
+                                                  ...(selected as string[]),
+                                                  name,
+                                                ]);
+                                              }
+                                            }}
+                                            className={[
+                                              "flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition",
+                                              active
+                                                ? "bg-zinc-100 font-medium dark:bg-zinc-800"
+                                                : "hover:bg-zinc-100 dark:hover:bg-zinc-800",
+                                            ].join(" ")}
+                                          >
+                                            <span>{name}</span>
+                                            {active ? (
+                                              <svg
+                                                width="16"
+                                                height="16"
+                                                viewBox="0 0 24 24"
+                                                className="text-teal-600"
+                                              >
+                                                <path
+                                                  fill="currentColor"
+                                                  d="M9 16.2l-3.5-3.5L4 14.2 9 19l12-12-1.5-1.5z"
+                                                />
+                                              </svg>
+                                            ) : null}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              </FormControl>
+                            </FormItem>
+                          );
+                        }}
+                      />
+                    </form>
+                  </Form>
                 </div>
                 <div className="sticky bottom-0 border-t border-white/20 bg-white/15 p-3 text-white backdrop-blur-sm">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onSearch();
-                    setMobileOpen(false);
-                  }}
-                  className="h-11 w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
-                >
-                  Buscar Imóvel
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSearch();
+                      setMobileOpen(false);
+                    }}
+                    className="h-11 w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+                  >
+                    Buscar Imóvel
+                  </button>
                 </div>
               </motion.div>
             </motion.div>
