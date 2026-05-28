@@ -35,10 +35,7 @@ const schema = z.object({
   mode: z.string().default("venda"),
   type: z.string().optional(),
   bedrooms: z.string().optional(),
-  priceRange: z
-    .enum(["__all__", "lt500k", "500k-1m", "1m-2m", "gt2m"])
-    .default("__all__"),
-  // Sliders (mobile drawer)
+  // Sliders (mobile drawer) + inputs (desktop bar)
   priceMin: z.number().optional(),
   priceMax: z.number().optional(),
   areaMin: z.number().optional(),
@@ -125,7 +122,6 @@ export default function HomeFilter({
     resolver: zodResolver(schema),
     defaultValues: {
       mode: defaultMode,
-      priceRange: "__all__",
       status: "__all__",
     },
   });
@@ -171,20 +167,53 @@ export default function HomeFilter({
     if (!v) return "Tipo";
     return getPropertyTypeLabel(v, propertyTypes);
   }, [form, propertyTypes]);
-  const priceLabel = useMemo(() => {
-    const v = form.watch("priceRange");
-    switch (v) {
-      case "lt500k":
-        return "Até 500k";
-      case "500k-1m":
-        return "500k–1M";
-      case "1m-2m":
-        return "1M–2M";
-      case "gt2m":
-        return "+2M";
-      default:
-        return "Preço";
+
+  function formatPrice(value: number): string {
+    return value.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
+  }
+  function formatPriceCompact(value: number): string {
+    if (value >= 1_000_000)
+      return `${(value / 1_000_000).toFixed(value % 1_000_000 === 0 ? 0 : 1)}M`;
+    if (value >= 1_000) return `${Math.round(value / 1_000)}k`;
+    return String(value);
+  }
+
+  const priceMinRef = useRef<HTMLInputElement>(null);
+  const priceMaxRef = useRef<HTMLInputElement>(null);
+  const [priceMinDisplay, setPriceMinDisplay] = useState("");
+  const [priceMaxDisplay, setPriceMaxDisplay] = useState("");
+  const priceMinWatch = form.watch("priceMin");
+  const priceMaxWatch = form.watch("priceMax");
+  useEffect(() => {
+    if (priceMinRef.current && document.activeElement !== priceMinRef.current) {
+      setPriceMinDisplay(
+        priceMinWatch != null ? formatPrice(priceMinWatch) : "",
+      );
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priceMinWatch]);
+  useEffect(() => {
+    if (priceMaxRef.current && document.activeElement !== priceMaxRef.current) {
+      setPriceMaxDisplay(
+        priceMaxWatch != null ? formatPrice(priceMaxWatch) : "",
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priceMaxWatch]);
+
+  const priceLabel = useMemo(() => {
+    const min = form.watch("priceMin");
+    const max = form.watch("priceMax");
+    if (min != null && max != null)
+      return `${formatPriceCompact(min)}–${formatPriceCompact(max)}`;
+    if (min != null) return `>${formatPriceCompact(min)}`;
+    if (max != null) return `<${formatPriceCompact(max)}`;
+    return "Preço";
   }, [form]);
   const cityLabel = useMemo(() => {
     const v = form.watch("city");
@@ -225,8 +254,6 @@ export default function HomeFilter({
       if (values.mode) params.set("mode", values.mode);
       if (values.type) params.set("type", values.type);
       if (values.bedrooms) params.set("bedrooms", values.bedrooms);
-      if (values.priceRange && values.priceRange !== "__all__")
-        params.set("priceRange", values.priceRange);
       if (typeof values.priceMin === "number")
         params.set("priceMin", String(values.priceMin));
       if (typeof values.priceMax === "number")
@@ -256,377 +283,392 @@ export default function HomeFilter({
           </h2>
         </div>
         <Form {...form}>
-          <form className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-8 items-end [&>*]:min-w-0">
-            {/* Localização */}
-            <FormField
-              control={form.control}
-              name="city"
-              render={({ field }) => (
-                <FormItem>
-                  <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
-                    Localização
-                  </span>
-                  <FormControl>
-                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <MapPin
-                        className="h-4 w-4 text-black/15 shrink-0"
-                        strokeWidth={2.25}
-                      />
-                      <Select
-                        value={field.value ?? undefined}
-                        onValueChange={(val) =>
-                          field.onChange(val === "__all__" ? undefined : val)
-                        }
-                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
-                        menuClassName="w-[340px]"
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Localização" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__all__">Todos</SelectItem>
-                          {cities.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            {/* Construtora */}
-            <FormField
-              control={form.control}
-              name="builder"
-              render={({ field }) => (
-                <FormItem>
-                  <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
-                    Construtora
-                  </span>
-                  <FormControl>
-                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <Home
-                        className="text-black/15 shrink-0"
-                        strokeWidth={2.25}
-                        size={18}
-                      />
-                      <Select
-                        value={field.value ?? "__all__"}
-                        onValueChange={field.onChange}
-                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
-                        items={builderSelectItems}
-                        placeholder="Construtora"
-                        menuMinWidth={200}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Construtora" />
-                        </SelectTrigger>
-                      </Select>
-                    </div>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            {/* Transação */}
-            <FormField
-              control={form.control}
-              name="mode"
-              render={({ field }) => (
-                <FormItem>
-                  <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
-                    Tipo de Transação
-                  </span>
-                  <FormControl>
-                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <ArrowLeftRight className="h-4 w-4 shrink-0 text-black/15" />
-                      <Select
-                        value={field.value ?? defaultMode}
-                        onValueChange={field.onChange}
-                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
-                        menuMinWidth={220}
-                        items={transactionTypes.map((opt) => ({
-                          value: opt.value,
-                          label: opt.label,
-                        }))}
-                        placeholder="Transação"
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Transação" />
-                        </SelectTrigger>
-                      </Select>
-                    </div>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            {/* Tipo */}
-            <FormField
-              control={form.control}
-              name="type"
-              render={({ field }) => (
-                <FormItem>
-                  <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
-                    Tipo
-                  </span>
-                  <FormControl>
-                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <Home className="h-4 w-4 shrink-0 text-black/15" />
-                      <Select
-                        value={field.value ?? undefined}
-                        onValueChange={(val) =>
-                          field.onChange(val === "__all__" ? undefined : val)
-                        }
-                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
-                        menuClassName="w-[184px]"
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Tipo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__all__">Todos</SelectItem>
-                          {propertyTypes.map((t) => (
-                            <SelectItem key={t.value} value={t.value}>
-                              {t.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            {/* Quartos */}
-            <FormField
-              control={form.control}
-              name="bedrooms"
-              render={({ field }) => (
-                <FormItem>
-                  <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
-                    Quartos
-                  </span>
-                  <FormControl>
-                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <Bed className="h-4 w-4 shrink-0 text-black/15" />
-                      <Select
-                        value={field.value ?? undefined}
-                        onValueChange={(val) =>
-                          field.onChange(val === "__all__" ? undefined : val)
-                        }
-                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Quartos" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__all__">Todos</SelectItem>
-                          <SelectItem value="1">1+</SelectItem>
-                          <SelectItem value="2">2+</SelectItem>
-                          <SelectItem value="3">3+</SelectItem>
-                          <SelectItem value="4">4+</SelectItem>
-                          <SelectItem value="5">5+</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            {/* Preço */}
-            <FormField
-              control={form.control}
-              name="priceRange"
-              render={({ field }) => (
-                <FormItem>
-                  <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
-                    Preço
-                  </span>
-                  <FormControl>
-                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <Tag className="h-4 w-4 shrink-0 text-black/15" />
-                      <Select
-                        value={field.value ?? "__all__"}
-                        onValueChange={field.onChange}
-                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
-                        menuClassName="w-[280px]"
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__all__">Todos</SelectItem>
-                          <SelectItem value="lt500k">Até R$ 500.000</SelectItem>
-                          <SelectItem value="500k-1m">
-                            R$ 500.000 - R$ 1.000.000
-                          </SelectItem>
-                          <SelectItem value="1m-2m">
-                            R$ 1.000.000 - R$ 2.000.000
-                          </SelectItem>
-                          <SelectItem value="gt2m">
-                            Acima de R$ 2.000.000
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            {!hideStatus ? (
-              <>
-                {/* Status */}
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
-                        Status
-                      </span>
-                      <FormControl>
-                        <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                          <Tag className="h-4 w-4 shrink-0 text-black/30" />
-                          <Select
-                            value={field.value ?? "__all__"}
-                            onValueChange={field.onChange}
-                            className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Selecione" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__all__">Todos</SelectItem>
-                              <SelectItem value="na-planta">
-                                Na planta
-                              </SelectItem>
-                              <SelectItem value="pronto">Pronto</SelectItem>
-                              <SelectItem value="mobiliado">
-                                Mobiliado
-                              </SelectItem>
-                              <SelectItem value="sem-mobilia">
-                                Sem mobília
-                              </SelectItem>
-                              <SelectItem value="reformado">
-                                Reformado
-                              </SelectItem>
-                              <SelectItem value="para-reformar">
-                                Para reformar
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </>
-            ) : null}
-            {/* Tags (multi-select compacto: mostra 1 + contador; seleção/deseleção no menu) */}
-            <FormField
-              control={form.control}
-              name="tag"
-              render={({ field }) => {
-                const selected = field.value ?? [];
-                return (
+          <form className="flex flex-col gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 items-end [&>*]:min-w-0">
+              {/* Localização */}
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
                   <FormItem>
                     <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
-                      Tags
+                      Localização
                     </span>
                     <FormControl>
-                      <div ref={tagsMenuRef} className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setTagsOpen((v) => !v)}
-                          className="flex h-11 w-full items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-left dark:border-zinc-800 dark:bg-zinc-900"
+                      <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                        <MapPin
+                          className="h-4 w-4 text-black/15 shrink-0"
+                          strokeWidth={2.25}
+                        />
+                        <Select
+                          value={field.value ?? undefined}
+                          onValueChange={(val) =>
+                            field.onChange(val === "__all__" ? undefined : val)
+                          }
+                          className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
+                          menuClassName="w-[340px]"
                         >
-                          <Tag className="h-4 w-4 text-black/15" />
-                          <span
-                            className={[
-                              "block w-full truncate",
-                              selected.length === 0
-                                ? "text-black/40"
-                                : "text-black/80",
-                            ].join(" ")}
-                          >
-                            {selected.length === 0
-                              ? "Tags"
-                              : `${selected[0]}${
-                                  selected.length > 1
-                                    ? ` +${selected.length - 1}`
-                                    : ""
-                                }`}
-                          </span>
-                          <svg
-                            aria-hidden="true"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            className="ml-2 text-black/40"
-                          >
-                            <path fill="currentColor" d="M7 10l5 5 5-5z" />
-                          </svg>
-                        </button>
-
-                        {tagsOpen ? (
-                          <div className="absolute z-50 mt-2 max-h-60 w-[260px] overflow-auto rounded-lg border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
-                            {tagOptions.map((name) => {
-                              const active = selected.includes(name);
-                              return (
-                                <button
-                                  type="button"
-                                  key={name}
-                                  onClick={() => {
-                                    if (active) {
-                                      field.onChange(
-                                        selected.filter(
-                                          (t: string) => t !== name,
-                                        ),
-                                      );
-                                    } else {
-                                      field.onChange([
-                                        ...(selected as string[]),
-                                        name,
-                                      ]);
-                                    }
-                                  }}
-                                  className={[
-                                    "flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition",
-                                    active
-                                      ? "bg-zinc-100 font-medium dark:bg-zinc-800"
-                                      : "hover:bg-zinc-100 dark:hover:bg-zinc-800",
-                                  ].join(" ")}
-                                >
-                                  <span>{name}</span>
-                                  {active ? (
-                                    <svg
-                                      width="16"
-                                      height="16"
-                                      viewBox="0 0 24 24"
-                                      className="text-teal-600"
-                                    >
-                                      <path
-                                        fill="currentColor"
-                                        d="M9 16.2l-3.5-3.5L4 14.2 9 19l12-12-1.5-1.5z"
-                                      />
-                                    </svg>
-                                  ) : null}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        ) : null}
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Localização" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Todos</SelectItem>
+                            {cities.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </FormControl>
                   </FormItem>
-                );
-              }}
-            />
+                )}
+              />
+              {/* Construtora */}
+              <FormField
+                control={form.control}
+                name="builder"
+                render={({ field }) => (
+                  <FormItem>
+                    <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                      Construtora
+                    </span>
+                    <FormControl>
+                      <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                        <Home
+                          className="text-black/15 shrink-0"
+                          strokeWidth={2.25}
+                          size={18}
+                        />
+                        <Select
+                          value={field.value ?? "__all__"}
+                          onValueChange={field.onChange}
+                          className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
+                          items={builderSelectItems}
+                          placeholder="Construtora"
+                          menuMinWidth={200}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Construtora" />
+                          </SelectTrigger>
+                        </Select>
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              {/* Transação */}
+              <FormField
+                control={form.control}
+                name="mode"
+                render={({ field }) => (
+                  <FormItem>
+                    <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                      Tipo de Transação
+                    </span>
+                    <FormControl>
+                      <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                        <ArrowLeftRight className="h-4 w-4 shrink-0 text-black/15" />
+                        <Select
+                          value={field.value ?? defaultMode}
+                          onValueChange={field.onChange}
+                          className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
+                          menuMinWidth={220}
+                          items={transactionTypes.map((opt) => ({
+                            value: opt.value,
+                            label: opt.label,
+                          }))}
+                          placeholder="Transação"
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Transação" />
+                          </SelectTrigger>
+                        </Select>
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              {/* Tipo */}
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                      Tipo
+                    </span>
+                    <FormControl>
+                      <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                        <Home className="h-4 w-4 shrink-0 text-black/15" />
+                        <Select
+                          value={field.value ?? undefined}
+                          onValueChange={(val) =>
+                            field.onChange(val === "__all__" ? undefined : val)
+                          }
+                          className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
+                          menuClassName="w-[184px]"
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Tipo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Todos</SelectItem>
+                            {propertyTypes.map((t) => (
+                              <SelectItem key={t.value} value={t.value}>
+                                {t.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              {/* Quartos */}
+              <FormField
+                control={form.control}
+                name="bedrooms"
+                render={({ field }) => (
+                  <FormItem>
+                    <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                      Quartos
+                    </span>
+                    <FormControl>
+                      <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                        <Bed className="h-4 w-4 shrink-0 text-black/15" />
+                        <Select
+                          value={field.value ?? undefined}
+                          onValueChange={(val) =>
+                            field.onChange(val === "__all__" ? undefined : val)
+                          }
+                          className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Quartos" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Todos</SelectItem>
+                            <SelectItem value="1">1+</SelectItem>
+                            <SelectItem value="2">2+</SelectItem>
+                            <SelectItem value="3">3+</SelectItem>
+                            <SelectItem value="4">4+</SelectItem>
+                            <SelectItem value="5">5+</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              {!hideStatus ? (
+                <>
+                  {/* Status */}
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                          Status
+                        </span>
+                        <FormControl>
+                          <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                            <Tag className="h-4 w-4 shrink-0 text-black/30" />
+                            <Select
+                              value={field.value ?? "__all__"}
+                              onValueChange={field.onChange}
+                              className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Selecione" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__all__">Todos</SelectItem>
+                                <SelectItem value="na-planta">
+                                  Na planta
+                                </SelectItem>
+                                <SelectItem value="pronto">Pronto</SelectItem>
+                                <SelectItem value="mobiliado">
+                                  Mobiliado
+                                </SelectItem>
+                                <SelectItem value="sem-mobilia">
+                                  Sem mobília
+                                </SelectItem>
+                                <SelectItem value="reformado">
+                                  Reformado
+                                </SelectItem>
+                                <SelectItem value="para-reformar">
+                                  Para reformar
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </>
+              ) : null}
+              {/* Tags (multi-select compacto: mostra 1 + contador; seleção/deseleção no menu) */}
+              <FormField
+                control={form.control}
+                name="tag"
+                render={({ field }) => {
+                  const selected = field.value ?? [];
+                  return (
+                    <FormItem>
+                      <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                        Tags
+                      </span>
+                      <FormControl>
+                        <div ref={tagsMenuRef} className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setTagsOpen((v) => !v)}
+                            className="flex h-11 w-full items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-left dark:border-zinc-800 dark:bg-zinc-900"
+                          >
+                            <Tag className="h-4 w-4 text-black/15" />
+                            <span
+                              className={[
+                                "block w-full truncate",
+                                selected.length === 0
+                                  ? "text-black/40"
+                                  : "text-black/80",
+                              ].join(" ")}
+                            >
+                              {selected.length === 0
+                                ? "Tags"
+                                : `${selected[0]}${
+                                    selected.length > 1
+                                      ? ` +${selected.length - 1}`
+                                      : ""
+                                  }`}
+                            </span>
+                            <svg
+                              aria-hidden="true"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              className="ml-2 text-black/40"
+                            >
+                              <path fill="currentColor" d="M7 10l5 5 5-5z" />
+                            </svg>
+                          </button>
 
-            {/* Buscar */}
-            <div className="col-span-full flex justify-center">
+                          {tagsOpen ? (
+                            <div className="absolute z-50 mt-2 max-h-60 w-[260px] overflow-auto rounded-lg border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+                              {tagOptions.map((name) => {
+                                const active = selected.includes(name);
+                                return (
+                                  <button
+                                    type="button"
+                                    key={name}
+                                    onClick={() => {
+                                      if (active) {
+                                        field.onChange(
+                                          selected.filter(
+                                            (t: string) => t !== name,
+                                          ),
+                                        );
+                                      } else {
+                                        field.onChange([
+                                          ...(selected as string[]),
+                                          name,
+                                        ]);
+                                      }
+                                    }}
+                                    className={[
+                                      "flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition",
+                                      active
+                                        ? "bg-zinc-100 font-medium dark:bg-zinc-800"
+                                        : "hover:bg-zinc-100 dark:hover:bg-zinc-800",
+                                    ].join(" ")}
+                                  >
+                                    <span>{name}</span>
+                                    {active ? (
+                                      <svg
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                        className="text-teal-600"
+                                      >
+                                        <path
+                                          fill="currentColor"
+                                          d="M9 16.2l-3.5-3.5L4 14.2 9 19l12-12-1.5-1.5z"
+                                        />
+                                      </svg>
+                                    ) : null}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ) : null}
+                        </div>
+                      </FormControl>
+                    </FormItem>
+                  );
+                }}
+              />
+            </div>
+            {/* Preço — 2ª linha */}
+            <div className="flex items-end gap-3">
+              <FormItem>
+                <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                  Valor mínimo
+                </span>
+                <div className="flex h-11 w-64 items-center rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                  <input
+                    ref={priceMinRef}
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="R$ Mín"
+                    className="w-full bg-transparent text-sm text-black/80 outline-none placeholder:text-black/40 dark:text-white dark:placeholder:text-white/40"
+                    value={priceMinDisplay}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, "");
+                      const num = digits ? Number(digits) : undefined;
+                      const display =
+                        num != null ? `R$ ${num.toLocaleString("pt-BR")}` : "";
+                      setPriceMinDisplay(display);
+                      form.setValue("priceMin", num);
+                    }}
+                    onBlur={() => {
+                      const num = form.getValues("priceMin");
+                      setPriceMinDisplay(num != null ? formatPrice(num) : "");
+                    }}
+                  />
+                </div>
+              </FormItem>
+              <FormItem>
+                <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                  Valor máximo
+                </span>
+                <div className="flex h-11 w-64 items-center rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                  <input
+                    ref={priceMaxRef}
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="R$ Máx"
+                    className="w-full bg-transparent text-sm text-black/80 outline-none placeholder:text-black/40 dark:text-white dark:placeholder:text-white/40"
+                    value={priceMaxDisplay}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, "");
+                      const num = digits ? Number(digits) : undefined;
+                      const display =
+                        num != null ? `R$ ${num.toLocaleString("pt-BR")}` : "";
+                      setPriceMaxDisplay(display);
+                      form.setValue("priceMax", num);
+                    }}
+                    onBlur={() => {
+                      const num = form.getValues("priceMax");
+                      setPriceMaxDisplay(num != null ? formatPrice(num) : "");
+                    }}
+                  />
+                </div>
+              </FormItem>
               <button
                 type="button"
                 onClick={onSearch}
@@ -696,7 +738,6 @@ export default function HomeFilter({
                       onClick={() =>
                         form.reset({
                           mode: defaultMode,
-                          priceRange: "__all__",
                           status: "__all__",
                         })
                       }

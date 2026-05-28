@@ -684,19 +684,17 @@ export default function MapaPage() {
           onSearch={(values: HomeFilterValues) => {
             form.setValue("city", values.city ?? undefined);
             form.setValue("mode", values.mode ?? defaultMode);
-            form.setValue("type", values.type ?? undefined);
+            form.setValue(
+              "type",
+              (values.type ?? undefined) as FormValues["type"],
+            );
             form.setValue(
               "bedrooms",
               values.bedrooms && values.bedrooms !== "__all__"
                 ? values.bedrooms
                 : undefined,
             );
-            form.setValue(
-              "priceRange",
-              values.priceRange && values.priceRange !== "__all__"
-                ? (values.priceRange as FormValues["priceRange"])
-                : undefined,
-            );
+            form.setValue("priceRange", undefined);
             form.setValue(
               "tag",
               values.tag?.length ? values.tag[0] : undefined,
@@ -720,10 +718,8 @@ export default function MapaPage() {
                 values.bedrooms && values.bedrooms !== "__all__"
                   ? values.bedrooms
                   : undefined,
-              priceRange:
-                values.priceRange && values.priceRange !== "__all__"
-                  ? values.priceRange
-                  : undefined,
+              priceMin: values.priceMin,
+              priceMax: values.priceMax,
               builder:
                 values.builder && values.builder !== "__all__"
                   ? values.builder

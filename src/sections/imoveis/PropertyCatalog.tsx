@@ -53,7 +53,10 @@ function buildVerTodosHref(sectionSlug: string, filters: FormValues): string {
   if (filters.city && filters.city !== "__all__") q.set("city", filters.city);
   if (filters.type) q.set("type", filters.type);
   if (filters.bedrooms) q.set("bedrooms", filters.bedrooms);
-  if (filters.priceRange) q.set("priceRange", filters.priceRange);
+  if (typeof filters.priceMin === "number")
+    q.set("priceMin", String(filters.priceMin));
+  if (typeof filters.priceMax === "number")
+    q.set("priceMax", String(filters.priceMax));
   if (filters.tag && filters.tag !== "__all__") q.set("tag", filters.tag);
   if (filters.builder && filters.builder !== "__all__")
     q.set("builder", filters.builder);
@@ -65,7 +68,8 @@ const schema = z.object({
   mode: z.string().default("venda"),
   type: z.string().optional(),
   bedrooms: z.string().optional(),
-  priceRange: z.enum(["lt500k", "500k-1m", "1m-2m", "gt2m"]).optional(),
+  priceMin: z.number().optional(),
+  priceMax: z.number().optional(),
   tag: z.string().optional(),
   builder: z.string().optional(),
 });
@@ -120,10 +124,12 @@ function PropertyCatalog({
       city: getParam(initialSearchParams, "city"),
       type: getParam(initialSearchParams, "type") as FormValues["type"],
       bedrooms: getParam(initialSearchParams, "bedrooms"),
-      priceRange: getParam(
-        initialSearchParams,
-        "priceRange",
-      ) as FormValues["priceRange"],
+      priceMin: getParam(initialSearchParams, "priceMin")
+        ? Number(getParam(initialSearchParams, "priceMin"))
+        : undefined,
+      priceMax: getParam(initialSearchParams, "priceMax")
+        ? Number(getParam(initialSearchParams, "priceMax"))
+        : undefined,
     };
   }, [initialSearchParams, typeOptions, defaultMode]);
 
@@ -166,6 +172,38 @@ function PropertyCatalog({
   const watchMode = form.watch("mode");
   const searchTrackRef = useRef<NodeJS.Timeout | null>(null);
 
+  function formatPrice(value: number): string {
+    return value.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
+  }
+
+  const priceMinRef = useRef<HTMLInputElement>(null);
+  const priceMaxRef = useRef<HTMLInputElement>(null);
+  const [priceMinDisplay, setPriceMinDisplay] = useState("");
+  const [priceMaxDisplay, setPriceMaxDisplay] = useState("");
+  const priceMinWatch = form.watch("priceMin");
+  const priceMaxWatch = form.watch("priceMax");
+  useEffect(() => {
+    if (priceMinRef.current && document.activeElement !== priceMinRef.current) {
+      setPriceMinDisplay(
+        priceMinWatch != null ? formatPrice(priceMinWatch) : "",
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priceMinWatch]);
+  useEffect(() => {
+    if (priceMaxRef.current && document.activeElement !== priceMaxRef.current) {
+      setPriceMaxDisplay(
+        priceMaxWatch != null ? formatPrice(priceMaxWatch) : "",
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priceMaxWatch]);
+
   useEffect(() => {
     if (searchTrackRef.current) clearTimeout(searchTrackRef.current);
     searchTrackRef.current = setTimeout(() => {
@@ -175,7 +213,8 @@ function PropertyCatalog({
         mode: watchValues.mode,
         type: watchValues.type,
         bedrooms: watchValues.bedrooms,
-        priceRange: watchValues.priceRange,
+        priceMin: watchValues.priceMin,
+        priceMax: watchValues.priceMax,
         tag: watchValues.tag,
         builder: watchValues.builder,
       };
@@ -190,7 +229,8 @@ function PropertyCatalog({
     watchValues.mode,
     watchValues.type,
     watchValues.bedrooms,
-    watchValues.priceRange,
+    watchValues.priceMin,
+    watchValues.priceMax,
     watchValues.tag,
     watchValues.builder,
   ]);
@@ -276,251 +316,268 @@ function PropertyCatalog({
       {/* Filtro só em telas muito grandes; tablet/iPad = fluxo mobile */}
       <div className="sticky top-32 z-40 mb-20 mt-8 relative hidden 2xl:block">
         <Form {...form}>
-          <form className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 relative z-40 [&>*]:min-w-0">
-            {/* Localização */}
-            <FormField
-              control={form.control}
-              name="city"
-              render={({ field }) => (
-                <FormItem>
-                  <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
-                    Localização
-                  </span>
-                  <FormControl>
-                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <MapPin className="h-4 w-4 shrink-0 text-black/15" />
-                      <Select
-                        value={field.value ?? undefined}
-                        onValueChange={field.onChange}
-                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
-                        menuClassName="w-[340px]"
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Localização" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__all__">Todos</SelectItem>
-                          {cities.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            {/* Transação */}
-            <FormField
-              control={form.control}
-              name="mode"
-              render={({ field }) => (
-                <FormItem>
-                  <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
-                    Tipo de Transação
-                  </span>
-                  <FormControl>
-                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <ArrowLeftRight className="h-4 w-4 shrink-0 text-black/15" />
-                      <Select
-                        value={field.value ?? defaultMode}
-                        onValueChange={field.onChange}
-                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
-                        menuMinWidth={220}
-                        items={typeOptions.map((opt) => ({
-                          value: opt.value,
-                          label: opt.label,
-                        }))}
-                        placeholder="Transação"
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Transação" />
-                        </SelectTrigger>
-                      </Select>
-                    </div>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            {/* Tipo */}
-            <FormField
-              control={form.control}
-              name="type"
-              render={({ field }) => (
-                <FormItem>
-                  <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
-                    Tipo
-                  </span>
-                  <FormControl>
-                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <Home className="h-4 w-4 shrink-0 text-black/15" />
-                      <Select
-                        value={field.value ?? undefined}
-                        onValueChange={(val) =>
-                          field.onChange(val === "__all__" ? undefined : val)
-                        }
-                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Tipo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__all__">Todos</SelectItem>
-                          {propertyTypes.map((t) => (
-                            <SelectItem key={t.value} value={t.value}>
-                              {t.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            {/* Quartos */}
-            <FormField
-              control={form.control}
-              name="bedrooms"
-              render={({ field }) => (
-                <FormItem>
-                  <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
-                    Quartos
-                  </span>
-                  <FormControl>
-                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <Bed className="h-4 w-4 shrink-0 text-black/15" />
-                      <Select
-                        value={field.value ?? undefined}
-                        onValueChange={(val) =>
-                          field.onChange(val === "__all__" ? undefined : val)
-                        }
-                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Quartos" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__all__">Todos</SelectItem>
-                          <SelectItem value="1">1+</SelectItem>
-                          <SelectItem value="2">2+</SelectItem>
-                          <SelectItem value="3">3+</SelectItem>
-                          <SelectItem value="4">4+</SelectItem>
-                          <SelectItem value="5">5+</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            {/* Preço (faixas) */}
-            <FormField
-              control={form.control}
-              name="priceRange"
-              render={({ field }) => (
-                <FormItem>
-                  <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
-                    Preço
-                  </span>
-                  <FormControl>
-                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <Tag className="h-4 w-4 shrink-0 text-black/15" />
-                      <Select
-                        value={field.value ?? undefined}
-                        onValueChange={(val) =>
-                          field.onChange(val === "__all__" ? undefined : val)
-                        }
-                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
-                        menuClassName="w-[280px]"
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__all__">Todos</SelectItem>
-                          <SelectItem value="lt500k">Até R$ 500.000</SelectItem>
-                          <SelectItem value="500k-1m">
-                            R$ 500.000 - R$ 1.000.000
-                          </SelectItem>
-                          <SelectItem value="1m-2m">
-                            R$ 1.000.000 - R$ 2.000.000
-                          </SelectItem>
-                          <SelectItem value="gt2m">
-                            Acima de R$ 2.000.000
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            {/* Tags */}
-            <FormField
-              control={form.control}
-              name="tag"
-              render={({ field }) => (
-                <FormItem>
-                  <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
-                    Tags
-                  </span>
-                  <FormControl>
-                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <Tag className="h-4 w-4 shrink-0 text-black/15" />
-                      <Select
-                        value={field.value ?? "__all__"}
-                        onValueChange={field.onChange}
-                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__all__">Todas</SelectItem>
-                          {tagOptions.map((name) => (
-                            <SelectItem key={name} value={name}>
-                              {name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            {/* Construtora */}
-            <FormField
-              control={form.control}
-              name="builder"
-              render={({ field }) => (
-                <FormItem>
-                  <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
-                    Construtora
-                  </span>
-                  <FormControl>
-                    <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
-                      <Home className="h-4 w-4 shrink-0 text-black/15" />
-                      <Select
-                        value={field.value ?? "__all__"}
-                        onValueChange={field.onChange}
-                        className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
-                        items={builderSelectItems}
-                        placeholder="Construtora"
-                        menuMinWidth={200}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Construtora" />
-                        </SelectTrigger>
-                      </Select>
-                    </div>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+          <form className="relative z-40 flex flex-col gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 [&>*]:min-w-0">
+              {/* Localização */}
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                      Localização
+                    </span>
+                    <FormControl>
+                      <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                        <MapPin className="h-4 w-4 shrink-0 text-black/15" />
+                        <Select
+                          value={field.value ?? undefined}
+                          onValueChange={field.onChange}
+                          className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
+                          menuClassName="w-[340px]"
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Localização" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Todos</SelectItem>
+                            {cities.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              {/* Transação */}
+              <FormField
+                control={form.control}
+                name="mode"
+                render={({ field }) => (
+                  <FormItem>
+                    <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                      Tipo de Transação
+                    </span>
+                    <FormControl>
+                      <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                        <ArrowLeftRight className="h-4 w-4 shrink-0 text-black/15" />
+                        <Select
+                          value={field.value ?? defaultMode}
+                          onValueChange={field.onChange}
+                          className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
+                          menuMinWidth={220}
+                          items={typeOptions.map((opt) => ({
+                            value: opt.value,
+                            label: opt.label,
+                          }))}
+                          placeholder="Transação"
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Transação" />
+                          </SelectTrigger>
+                        </Select>
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              {/* Tipo */}
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                      Tipo
+                    </span>
+                    <FormControl>
+                      <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                        <Home className="h-4 w-4 shrink-0 text-black/15" />
+                        <Select
+                          value={field.value ?? undefined}
+                          onValueChange={(val) =>
+                            field.onChange(val === "__all__" ? undefined : val)
+                          }
+                          className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Tipo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Todos</SelectItem>
+                            {propertyTypes.map((t) => (
+                              <SelectItem key={t.value} value={t.value}>
+                                {t.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              {/* Quartos */}
+              <FormField
+                control={form.control}
+                name="bedrooms"
+                render={({ field }) => (
+                  <FormItem>
+                    <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                      Quartos
+                    </span>
+                    <FormControl>
+                      <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                        <Bed className="h-4 w-4 shrink-0 text-black/15" />
+                        <Select
+                          value={field.value ?? undefined}
+                          onValueChange={(val) =>
+                            field.onChange(val === "__all__" ? undefined : val)
+                          }
+                          className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Quartos" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Todos</SelectItem>
+                            <SelectItem value="1">1+</SelectItem>
+                            <SelectItem value="2">2+</SelectItem>
+                            <SelectItem value="3">3+</SelectItem>
+                            <SelectItem value="4">4+</SelectItem>
+                            <SelectItem value="5">5+</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              {/* Tags */}
+              <FormField
+                control={form.control}
+                name="tag"
+                render={({ field }) => (
+                  <FormItem>
+                    <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                      Tags
+                    </span>
+                    <FormControl>
+                      <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                        <Tag className="h-4 w-4 shrink-0 text-black/15" />
+                        <Select
+                          value={field.value ?? "__all__"}
+                          onValueChange={field.onChange}
+                          className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">Todas</SelectItem>
+                            {tagOptions.map((name) => (
+                              <SelectItem key={name} value={name}>
+                                {name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              {/* Construtora */}
+              <FormField
+                control={form.control}
+                name="builder"
+                render={({ field }) => (
+                  <FormItem>
+                    <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                      Construtora
+                    </span>
+                    <FormControl>
+                      <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                        <Home className="h-4 w-4 shrink-0 text-black/15" />
+                        <Select
+                          value={field.value ?? "__all__"}
+                          onValueChange={field.onChange}
+                          className="min-w-0 flex-1 text-black/80 border-0 bg-transparent px-0"
+                          items={builderSelectItems}
+                          placeholder="Construtora"
+                          menuMinWidth={200}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Construtora" />
+                          </SelectTrigger>
+                        </Select>
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
+            {/* Preço — 2ª linha */}
+            <div className="flex gap-3">
+              <FormItem>
+                <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                  Valor mínimo
+                </span>
+                <div className="flex h-11 w-64 items-center rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                  <input
+                    ref={priceMinRef}
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="R$ Mín"
+                    className="w-full bg-transparent text-sm text-black/80 outline-none placeholder:text-black/40 dark:text-white dark:placeholder:text-white/40"
+                    value={priceMinDisplay}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, "");
+                      const num = digits ? Number(digits) : undefined;
+                      const display =
+                        num != null ? `R$ ${num.toLocaleString("pt-BR")}` : "";
+                      setPriceMinDisplay(display);
+                      form.setValue("priceMin", num);
+                    }}
+                    onBlur={() => {
+                      const num = form.getValues("priceMin");
+                      setPriceMinDisplay(num != null ? formatPrice(num) : "");
+                    }}
+                  />
+                </div>
+              </FormItem>
+              <FormItem>
+                <span className="block px-1 text-[10px] font-medium text-black/90 dark:text-white">
+                  Valor máximo
+                </span>
+                <div className="flex h-11 w-64 items-center rounded-lg border border-zinc-200 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-900">
+                  <input
+                    ref={priceMaxRef}
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="R$ Máx"
+                    className="w-full bg-transparent text-sm text-black/80 outline-none placeholder:text-black/40 dark:text-white dark:placeholder:text-white/40"
+                    value={priceMaxDisplay}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, "");
+                      const num = digits ? Number(digits) : undefined;
+                      const display =
+                        num != null ? `R$ ${num.toLocaleString("pt-BR")}` : "";
+                      setPriceMaxDisplay(display);
+                      form.setValue("priceMax", num);
+                    }}
+                    onBlur={() => {
+                      const num = form.getValues("priceMax");
+                      setPriceMaxDisplay(num != null ? formatPrice(num) : "");
+                    }}
+                  />
+                </div>
+              </FormItem>
+            </div>
           </form>
         </Form>
         {/* Top/Bottom fades (desktop only) */}
