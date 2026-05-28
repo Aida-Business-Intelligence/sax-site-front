@@ -19,8 +19,10 @@ import { MapPin, ArrowLeftRight, Home, Tag, Bed } from "lucide-react";
 import {
   getProperties,
   getSiteConfig,
+  getTags,
   type TransactionTypeOption,
 } from "@/services/properties";
+import type { TagDto } from "@/lib/sax-api";
 import { usePropertyTypes } from "@/hooks/usePropertyTypes";
 import { getPropertyTypeLabel } from "@/lib/property-types";
 
@@ -78,9 +80,13 @@ export default function HomeFilter({
   const [transactionTypes, setTransactionTypes] = useState<
     TransactionTypeOption[]
   >(FALLBACK_TRANSACTION_TYPES);
+  const [apiTags, setApiTags] = useState<TagDto[]>([]);
   const propertyTypes = usePropertyTypes();
   useEffect(() => {
     getProperties().then(setProperties);
+  }, []);
+  useEffect(() => {
+    getTags().then(setApiTags);
   }, []);
   useEffect(() => {
     getSiteConfig().then((c) => {
@@ -140,12 +146,21 @@ export default function HomeFilter({
   }, [properties]);
 
   const tagOptions = useMemo(() => {
+    if (apiTags.length > 0) {
+      return apiTags
+        .sort(
+          (a, b) =>
+            (a.sortOrder ?? 0) - (b.sortOrder ?? 0) ||
+            a.name.localeCompare(b.name),
+        )
+        .map((t) => t.name);
+    }
     const set = new Set<string>();
     (properties ?? []).forEach((p) =>
-      (p.amenities ?? []).forEach((a) => set.add(a)),
+      (p.tagImovel ?? []).forEach((t) => set.add(String(t))),
     );
     return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [properties]);
+  }, [apiTags, properties]);
 
   const builderOptions = useMemo(() => {
     const set = new Set<string>();
@@ -559,7 +574,7 @@ export default function HomeFilter({
                           </button>
 
                           {tagsOpen ? (
-                            <div className="absolute z-50 mt-2 max-h-60 w-[260px] overflow-auto rounded-lg border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+                            <div className="absolute bottom-full z-50 mb-2 max-h-60 w-[260px] overflow-auto rounded-lg border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
                               {tagOptions.map((name) => {
                                 const active = selected.includes(name);
                                 return (
@@ -672,7 +687,7 @@ export default function HomeFilter({
               <button
                 type="button"
                 onClick={onSearch}
-                className="h-11 rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+                className="h-11 cursor-pointer rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
               >
                 Buscar Imóvel
               </button>

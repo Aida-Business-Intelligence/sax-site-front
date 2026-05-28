@@ -1,5 +1,12 @@
 "use client";
-import React, { useCallback, useEffect, useRef, useState, ReactNode, ReactElement } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  ReactNode,
+  ReactElement,
+} from "react";
 import { createPortal } from "react-dom";
 
 export type SelectOptionItem = { value: string; label: ReactNode };
@@ -74,7 +81,8 @@ export function Select({
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [menuRect, setMenuRect] = useState<{
     left: number;
-    top: number;
+    top?: number;
+    bottom?: number;
     width: number;
   } | null>(null);
 
@@ -95,7 +103,17 @@ export function Select({
     if (!wrapperRef.current) return;
     const rect = wrapperRef.current.getBoundingClientRect();
     const w = Math.max(rect.width, menuMinWidth);
-    setMenuRect({ left: rect.left, top: rect.bottom + 8, width: w });
+    const spaceBelow = window.innerHeight - rect.bottom - 8;
+    const openUp = spaceBelow < 200;
+    setMenuRect(
+      openUp
+        ? {
+            left: rect.left,
+            bottom: window.innerHeight - rect.top + 8,
+            width: w,
+          }
+        : { left: rect.left, top: rect.bottom + 8, width: w },
+    );
   }, [menuMinWidth]);
 
   useEffect(() => {
@@ -116,7 +134,10 @@ export function Select({
   const selected = options.find((o) => o.value === value);
 
   return (
-    <div ref={wrapperRef} className={["relative min-w-0", className].filter(Boolean).join(" ")}>
+    <div
+      ref={wrapperRef}
+      className={["relative min-w-0", className].filter(Boolean).join(" ")}
+    >
       <button
         type="button"
         disabled={disabled}
@@ -138,19 +159,23 @@ export function Select({
         <span
           className={[
             "min-w-0 flex-1 truncate text-left",
-            !selected ? placeholderClassName ?? "text-black/40" : valueClassName ?? "",
+            !selected
+              ? (placeholderClassName ?? "text-black/40")
+              : (valueClassName ?? ""),
           ]
             .filter(Boolean)
             .join(" ")}
         >
-          {selected ? selected.label : placeholder ?? "Selecionar"}
+          {selected ? selected.label : (placeholder ?? "Selecionar")}
         </span>
         <svg
           aria-hidden="true"
           width="16"
           height="16"
           viewBox="0 0 24 24"
-          className={["shrink-0", caretClassName ?? "text-black/40"].filter(Boolean).join(" ")}
+          className={["shrink-0", caretClassName ?? "text-black/40"]
+            .filter(Boolean)
+            .join(" ")}
         >
           <path fill="currentColor" d="M7 10l5 5 5-5z" />
         </svg>
@@ -168,7 +193,10 @@ export function Select({
               style={{
                 position: "fixed",
                 left: `${menuRect.left}px`,
-                top: `${menuRect.top}px`,
+                ...(menuRect.top != null ? { top: `${menuRect.top}px` } : {}),
+                ...(menuRect.bottom != null
+                  ? { bottom: `${menuRect.bottom}px` }
+                  : {}),
                 width: menuClassName ? undefined : `${menuRect.width}px`,
                 zIndex: 10000,
               }}
@@ -197,32 +225,34 @@ export function Select({
                 );
               })}
             </div>,
-            document.body
+            document.body,
           )
         : null}
     </div>
   );
 }
 
-export const SelectTrigger: React.FC<React.PropsWithChildren<{ className?: string; disabled?: boolean }>> =
-  function SelectTrigger({ children, className }) {
-    return <div className={className}>{children}</div>;
-  };
+export const SelectTrigger: React.FC<
+  React.PropsWithChildren<{ className?: string; disabled?: boolean }>
+> = function SelectTrigger({ children, className }) {
+  return <div className={className}>{children}</div>;
+};
 SelectTrigger.displayName = "SelectTrigger";
 
-export const SelectValue: React.FC<{ placeholder?: string }> = function SelectValue() {
-  return null;
-};
+export const SelectValue: React.FC<{ placeholder?: string }> =
+  function SelectValue() {
+    return null;
+  };
 SelectValue.displayName = "SelectValue";
 
-export const SelectContent: React.FC<React.PropsWithChildren> = function SelectContent({ children }) {
-  return <>{children}</>;
-};
+export const SelectContent: React.FC<React.PropsWithChildren> =
+  function SelectContent({ children }) {
+    return <>{children}</>;
+  };
 SelectContent.displayName = "SelectContent";
 
-export const SelectItem: React.FC<React.PropsWithChildren<{ value: string }>> = function SelectItem({
-  children,
-}) {
-  return <>{children}</>;
-};
+export const SelectItem: React.FC<React.PropsWithChildren<{ value: string }>> =
+  function SelectItem({ children }) {
+    return <>{children}</>;
+  };
 SelectItem.displayName = "SelectItem";
