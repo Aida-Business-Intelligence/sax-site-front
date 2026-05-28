@@ -23,21 +23,8 @@ export function mapApiPropertyToProperty(p: Record<string, unknown>): Property {
   const cover = (p.coverImage as Record<string, unknown>) ?? {};
   const type = p.type as string;
   const validType =
-    type === "casa" ||
-    type === "casa_condominio" ||
-    type === "apartamento" ||
-    type === "duplex" ||
-    type === "master" ||
-    type === "flat" ||
-    type === "cobertura" ||
-    type === "terraco" ||
-    type === "terreno" ||
-    type === "sala" ||
-    type === "galpao" ||
-    type === "kitnet" ||
-    type === "studio" ||
-    type === "comercial"
-      ? type
+    typeof type === "string" && type.trim() !== ""
+      ? type.trim()
       : "apartamento";
   const transactionTypes = Array.isArray(p.transactionTypes)
     ? (p.transactionTypes as string[])

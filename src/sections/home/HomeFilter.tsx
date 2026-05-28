@@ -21,6 +21,8 @@ import {
   getSiteConfig,
   type TransactionTypeOption,
 } from "@/services/properties";
+import { usePropertyTypes } from "@/hooks/usePropertyTypes";
+import { getPropertyTypeLabel } from "@/lib/property-types";
 
 const FALLBACK_TRANSACTION_TYPES: TransactionTypeOption[] = [
   { value: "venda", label: "Venda" },
@@ -31,24 +33,7 @@ const FALLBACK_TRANSACTION_TYPES: TransactionTypeOption[] = [
 const schema = z.object({
   city: z.string().optional(),
   mode: z.string().default("venda"),
-  type: z
-    .enum([
-      "casa",
-      "casa_condominio",
-      "apartamento",
-      "duplex",
-      "master",
-      "flat",
-      "cobertura",
-      "terraco",
-      "terreno",
-      "sala",
-      "galpao",
-      "kitnet",
-      "studio",
-      "comercial",
-    ])
-    .optional(),
+  type: z.string().optional(),
   bedrooms: z.string().optional(),
   priceRange: z
     .enum(["__all__", "lt500k", "500k-1m", "1m-2m", "gt2m"])
@@ -96,6 +81,7 @@ export default function HomeFilter({
   const [transactionTypes, setTransactionTypes] = useState<
     TransactionTypeOption[]
   >(FALLBACK_TRANSACTION_TYPES);
+  const propertyTypes = usePropertyTypes();
   useEffect(() => {
     getProperties().then(setProperties);
   }, []);
@@ -183,8 +169,8 @@ export default function HomeFilter({
   const typeLabel = useMemo(() => {
     const v = form.watch("type");
     if (!v) return "Tipo";
-    return v.charAt(0).toUpperCase() + v.slice(1);
-  }, [form]);
+    return getPropertyTypeLabel(v, propertyTypes);
+  }, [form, propertyTypes]);
   const priceLabel = useMemo(() => {
     const v = form.watch("priceRange");
     switch (v) {
@@ -401,24 +387,11 @@ export default function HomeFilter({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__all__">Todos</SelectItem>
-                          <SelectItem value="casa">Casa</SelectItem>
-                          <SelectItem value="casa_condominio">
-                            Casa Condomínio
-                          </SelectItem>
-                          <SelectItem value="apartamento">
-                            Apartamento
-                          </SelectItem>
-                          <SelectItem value="duplex">Duplex</SelectItem>
-                          <SelectItem value="master">Master</SelectItem>
-                          <SelectItem value="flat">Flat</SelectItem>
-                          <SelectItem value="cobertura">Cobertura</SelectItem>
-                          <SelectItem value="terraco">Terraço</SelectItem>
-                          <SelectItem value="terreno">Terreno</SelectItem>
-                          <SelectItem value="sala">Sala</SelectItem>
-                          <SelectItem value="galpao">Galpão</SelectItem>
-                          <SelectItem value="kitnet">Kitnet</SelectItem>
-                          <SelectItem value="studio">Studio</SelectItem>
-                          <SelectItem value="comercial">Comercial</SelectItem>
+                          {propertyTypes.map((t) => (
+                            <SelectItem key={t.value} value={t.value}>
+                              {t.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -898,16 +871,11 @@ export default function HomeFilter({
                                     <SelectItem value="__all__">
                                       Todos
                                     </SelectItem>
-                                    <SelectItem value="casa">Casa</SelectItem>
-                                    <SelectItem value="apartamento">
-                                      Apartamento
-                                    </SelectItem>
-                                    <SelectItem value="terreno">
-                                      Terreno
-                                    </SelectItem>
-                                    <SelectItem value="comercial">
-                                      Comercial
-                                    </SelectItem>
+                                    {propertyTypes.map((t) => (
+                                      <SelectItem key={t.value} value={t.value}>
+                                        {t.label}
+                                      </SelectItem>
+                                    ))}
                                   </SelectContent>
                                 </Select>
                               </div>

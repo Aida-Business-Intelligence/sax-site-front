@@ -6,26 +6,14 @@ import { mapApiPropertyToProperty } from "@/services/properties";
 import type { Property } from "@/types/realEstate";
 import { trackEvent, identifyLead } from "@/lib/tracking-crm";
 import { cn } from "@/lib/utils";
+import { usePropertyTypes } from "@/hooks/usePropertyTypes";
 
 const STORAGE_DONE = "sax.hunt.v1.done";
 const STORAGE_SNOOZE = "sax.hunt.v1.snoozeUntil";
 const OPEN_DELAY_MS = 6000;
 
 type Mode = "venda" | "aluguel";
-type PropertyKind =
-  | "casa"
-  | "casa_condominio"
-  | "apartamento"
-  | "duplex"
-  | "master"
-  | "flat"
-  | "cobertura"
-  | "terraco"
-  | "terreno"
-  | "sala"
-  | "galpao"
-  | "kitnet"
-  | "studio";
+type PropertyKind = string;
 type PriceRangeKey = "any" | "lt500k" | "500k-1m" | "1m-2m" | "gt2m";
 
 const PRICE_RANGES: Record<
@@ -98,6 +86,7 @@ export function HuntModeOverlay() {
   const [priceRange, setPriceRange] = useState<PriceRangeKey>("any");
   const [matches, setMatches] = useState<Property[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
+  const propertyTypes = usePropertyTypes();
   const [phone, setPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -338,41 +327,27 @@ export function HuntModeOverlay() {
                     Qual tipo de imóvel?
                   </h3>
                   <div className="grid grid-cols-2 gap-2">
-                    {(
-                      [
-                        "casa",
-                        "casa_condominio",
-                        "apartamento",
-                        "duplex",
-                        "master",
-                        "flat",
-                        "cobertura",
-                        "terraco",
-                        "terreno",
-                        "sala",
-                        "galpao",
-                        "kitnet",
-                        "studio",
-                      ] as PropertyKind[]
-                    ).map((k) => (
-                      <button
-                        key={k}
-                        type="button"
-                        onClick={() => {
-                          setKind(k);
-                          setStep(3);
-                          trackEvent("FUNNEL_HUNT_STEP", { kind: k });
-                        }}
-                        className={cn(
-                          "rounded-xl border px-3 py-3 text-sm capitalize transition",
-                          kind === k
-                            ? "border-emerald-500 bg-emerald-500/20"
-                            : "border-white/15 bg-white/5 hover:border-emerald-500/40",
-                        )}
-                      >
-                        {k}
-                      </button>
-                    ))}
+                    {propertyTypes
+                      .filter((t) => t.value !== "comercial")
+                      .map((t) => (
+                        <button
+                          key={t.value}
+                          type="button"
+                          onClick={() => {
+                            setKind(t.value);
+                            setStep(3);
+                            trackEvent("FUNNEL_HUNT_STEP", { kind: t.value });
+                          }}
+                          className={cn(
+                            "rounded-xl border px-3 py-3 text-sm capitalize transition",
+                            kind === t.value
+                              ? "border-emerald-500 bg-emerald-500/20"
+                              : "border-white/15 bg-white/5 hover:border-emerald-500/40",
+                          )}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
                   </div>
                 </div>
               )}

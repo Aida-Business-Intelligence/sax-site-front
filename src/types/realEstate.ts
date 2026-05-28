@@ -39,21 +39,8 @@ export type Property = {
   bedrooms: number;
   bathrooms: number;
   area: number; // m²
-  type:
-    | "casa"
-    | "casa_condominio"
-    | "apartamento"
-    | "duplex"
-    | "master"
-    | "flat"
-    | "cobertura"
-    | "terraco"
-    | "terreno"
-    | "sala"
-    | "galpao"
-    | "kitnet"
-    | "studio"
-    | "comercial";
+  /** Slug do tipo de imóvel. Pode ser um dos tipos fixos ou um tipo dinâmico cadastrado via /api/property-types. */
+  type: string;
   /**
    * Nome da construtora responsável (quando aplicável).
    * Opcional para manter compatibilidade com mocks existentes.

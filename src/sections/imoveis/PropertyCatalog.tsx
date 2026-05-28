@@ -28,6 +28,7 @@ import PartnersSection from "./PartnersSection";
 import { MapPin, ArrowLeftRight, Home, Tag, Bed } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { applyFilter } from "@/lib/property-filter";
+import { usePropertyTypes } from "@/hooks/usePropertyTypes";
 
 function getParam(
   params: Record<string, string | string[] | undefined> | undefined,
@@ -62,24 +63,7 @@ function buildVerTodosHref(sectionSlug: string, filters: FormValues): string {
 const schema = z.object({
   city: z.string().optional(),
   mode: z.string().default("venda"),
-  type: z
-    .enum([
-      "casa",
-      "casa_condominio",
-      "apartamento",
-      "duplex",
-      "master",
-      "flat",
-      "cobertura",
-      "terraco",
-      "terreno",
-      "sala",
-      "galpao",
-      "kitnet",
-      "studio",
-      "comercial",
-    ])
-    .optional(),
+  type: z.string().optional(),
   bedrooms: z.string().optional(),
   priceRange: z.enum(["lt500k", "500k-1m", "1m-2m", "gt2m"]).optional(),
   tag: z.string().optional(),
@@ -115,6 +99,7 @@ function PropertyCatalog({
   const typeOptions =
     transactionTypes.length > 0 ? transactionTypes : FALLBACK_TRANSACTION_TYPES;
   const defaultMode = typeOptions[0]?.value ?? "venda";
+  const propertyTypes = usePropertyTypes();
 
   const defaultValuesFromParams = useMemo(() => {
     const modeParam = getParam(initialSearchParams, "mode");
@@ -383,24 +368,11 @@ function PropertyCatalog({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__all__">Todos</SelectItem>
-                          <SelectItem value="casa">Casa</SelectItem>
-                          <SelectItem value="casa_condominio">
-                            Casa Condomínio
-                          </SelectItem>
-                          <SelectItem value="apartamento">
-                            Apartamento
-                          </SelectItem>
-                          <SelectItem value="duplex">Duplex</SelectItem>
-                          <SelectItem value="master">Master</SelectItem>
-                          <SelectItem value="flat">Flat</SelectItem>
-                          <SelectItem value="cobertura">Cobertura</SelectItem>
-                          <SelectItem value="terraco">Terraço</SelectItem>
-                          <SelectItem value="terreno">Terreno</SelectItem>
-                          <SelectItem value="sala">Sala</SelectItem>
-                          <SelectItem value="galpao">Galpão</SelectItem>
-                          <SelectItem value="kitnet">Kitnet</SelectItem>
-                          <SelectItem value="studio">Studio</SelectItem>
-                          <SelectItem value="comercial">Comercial</SelectItem>
+                          {propertyTypes.map((t) => (
+                            <SelectItem key={t.value} value={t.value}>
+                              {t.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
