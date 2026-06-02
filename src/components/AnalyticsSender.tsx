@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { trackEvent } from "@/lib/analytics";
+import { requestBrowserGeoOnce, trackEvent } from "@/lib/analytics";
 import { trackEvent as trackCrm } from "@/lib/tracking-crm";
 
 /** Intervalo (ms) para enviar time_on_page enquanto a página está visível. */
@@ -15,9 +15,16 @@ const SCROLL_DEPTHS = [25, 50, 75, 100];
  */
 export function AnalyticsSender() {
   const pathname = usePathname();
+  const geoOnce = useRef(false);
   const pageEnteredAt = useRef<number>(0);
   const scrollDepthsSent = useRef<Set<number>>(new Set());
   const timeInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (geoOnce.current) return;
+    geoOnce.current = true;
+    requestBrowserGeoOnce();
+  }, []);
 
   // page_view + inicia tempo e reseta scroll (ref evita duplicar no Strict Mode / double-invoke)
   const sentPageViewRef = useRef<string | null>(null);

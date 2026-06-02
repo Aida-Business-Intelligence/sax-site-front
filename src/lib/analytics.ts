@@ -4,6 +4,8 @@ import { getSaxApiBase } from "@/lib/sax-api";
 
 const STORAGE_CONSENT = "sax.cookies.consent";
 const STORAGE_SESSION = "sax.analytics.sessionId";
+const STORAGE_BROWSER_GEO = "sax.analytics.browserGeo";
+const STORAGE_BROWSER_GEO_ATTEMPTED = "sax.analytics.browserGeoAttempted";
 
 function randomId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
@@ -87,6 +89,30 @@ export function getDeviceInfo(): {
   return { userAgent: ua, deviceType, browser, os };
 }
 
+/** GPS do navegador (se o visitante autorizar); reutilizado nos eventos seguintes. */
+function getBrowserGeoForPayload(): { latitude: number; longitude: number } | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const raw = sessionStorage.getItem(STORAGE_BROWSER_GEO);
+    if (!raw) return undefined;
+    const j = JSON.parse(raw) as { lat?: number; lng?: number };
+    if (typeof j.lat === "number" && typeof j.lng === "number") {
+      return { latitude: j.lat, longitude: j.lng };
+    }
+  } catch {
+    /* ignore */
+  }
+  return undefined;
+}
+
+function getClientTimeZone(): string | undefined {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    return undefined;
+  }
+}
+
 function getTrackingContext(): Record<string, unknown> {
   const utm = getUtmParams();
   const device = getDeviceInfo();
@@ -109,12 +135,13 @@ export async function trackEvent(
   payload?: Record<string, unknown>
 ): Promise<void> {
   if (typeof window === "undefined") return;
-  if (!hasConsent()) return;
   const base = getSaxApiBase();
   if (!base) return;
   const sessionId = getSessionId();
   if (!sessionId) return;
   const ctx = getTrackingContext();
+  const geo = getBrowserGeoForPayload();
+  const tz = getClientTimeZone();
   const body: Record<string, unknown> = {
     sessionId,
     eventType,
@@ -128,6 +155,8 @@ export async function trackEvent(
     deviceType: (ctx.deviceType as string) || undefined,
     browser: (ctx.browser as string) || undefined,
     os: (ctx.os as string) || undefined,
+    ...(tz ? { timeZone: tz } : {}),
+    ...(geo ? { latitude: geo.latitude, longitude: geo.longitude } : {}),
   };
   try {
     await fetch(`${base}/api/analytics/event`, {
@@ -138,6 +167,25 @@ export async function trackEvent(
   } catch {
     // ignore
   }
+}
+
+/** Solicita localização uma vez por aba (não bloqueia; falha silenciosa). Reenvia `geo_update` quando o GPS ficar disponível. */
+export function requestBrowserGeoOnce(): void {
+  if (typeof window === "undefined") return;
+  if (sessionStorage.getItem(STORAGE_BROWSER_GEO_ATTEMPTED)) return;
+  sessionStorage.setItem(STORAGE_BROWSER_GEO_ATTEMPTED, "1");
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      sessionStorage.setItem(
+        STORAGE_BROWSER_GEO,
+        JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+      );
+      void trackEvent("geo_update", window.location.pathname);
+    },
+    () => {},
+    { enableHighAccuracy: false, timeout: 12000, maximumAge: 600_000 }
+  );
 }
 
 export async function submitLead(data: {

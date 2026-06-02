@@ -9,6 +9,7 @@ import MuiThemeProvider from "@/components/providers/MuiThemeProvider";
 import { JsonLdRealEstateAgent } from "@/components/seo/JsonLdRealEstateAgent";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { AnalyticsSender } from "@/components/AnalyticsSender";
+import { LiveOperatorMessages } from "@/components/LiveOperatorMessages";
 import { HuntModeOverlay } from "@/components/hunt/HuntModeOverlay";
 import { Toaster } from "sonner";
 import { getSiteConfig } from "@/services/properties";
@@ -63,9 +64,12 @@ export default async function RootLayout({
   let logoSrc: string | null = null;
   let faviconSrc: string | null = null;
   let footerContent: Record<string, unknown> | null = null;
+  /** Usado pelo Modo Caça: vem do servidor (sem CORS), evita ficar desligado quando o fetch no browser falha. */
+  let huntModeEnabledFromServer = false;
   try {
     const config = await getSiteConfig();
     footerContent = config?.footerContent ?? null;
+    huntModeEnabledFromServer = Boolean(config?.huntModeEnabled);
     const base = getSaxApiBase();
     if (config?.logoUrl) {
       logoSrc = config.logoUrl.startsWith("http")
@@ -152,12 +156,14 @@ export default async function RootLayout({
           ) : null}
         <MuiThemeProvider>
           <Toaster
-            position="top-center"
+            position="bottom-right"
             richColors
             closeButton
             expand
-            className="!z-[100]"
+            className="!z-[125]"
             duration={5000}
+            offset={{ bottom: "5.75rem", right: "1rem" }}
+            mobileOffset={{ bottom: "5.75rem", right: "1rem" }}
             toastOptions={{
               classNames: {
                 toast:
@@ -170,8 +176,9 @@ export default async function RootLayout({
             }}
           />
           <CookieConsentBanner />
-          <HuntModeOverlay />
+          <HuntModeOverlay huntModeEnabled={huntModeEnabledFromServer} />
           <AnalyticsSender />
+          <LiveOperatorMessages />
           <Header logoSrc={logoSrc} />
           {/* Top mask to fade content under fixed header/menu */}
           {/* Solid cap under the fixed header (desktop/tablet only); oculto em /imoveis/mapa via .mapa-page-no-header-fade */}

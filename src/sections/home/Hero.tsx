@@ -132,8 +132,9 @@ export default function Hero({ heroContent = null }: HeroProps) {
   const buttonHref = buildButtonHref(hero.buttonLinkType, hero.buttonLink);
 
   return (
-    <section className="relative mx-auto flex min-h-[calc(100vh-220px)] max-w-7xl flex-col overflow-visible px-4 pt-12 sm:min-h-[calc(100vh-180px)] sm:px-6 sm:pt-16 2xl:block 2xl:min-h-[calc(100vh-176px)] 2xl:pt-48">
-      <div className="grid gap-8 2xl:grid-cols-2 2xl:items-center">
+    <section className="relative mx-auto flex min-h-[calc(100vh-220px)] max-w-6xl flex-col overflow-visible px-4 pt-12 sm:min-h-[calc(100vh-180px)] sm:px-6 sm:pt-16 2xl:block 2xl:min-h-[calc(100vh-176px)] 2xl:pt-48">
+      {/* min-h: reserva espaço vertical para o globo absoluto (top-36 + ~520px) antes do filtro no fluxo */}
+      <div className="grid gap-8 2xl:min-h-[min(696px,calc(100vh-240px))] 2xl:grid-cols-2 2xl:items-center">
         <div className="space-y-6 relative z-10 hidden 2xl:block">
           <motion.h1
             initial={{ opacity: 0, y: 16 }}
@@ -175,11 +176,11 @@ export default function Hero({ heroContent = null }: HeroProps) {
         <div className="hidden 2xl:block" aria-hidden="true" />
       </div>
 
-      {/* Mapa (mobile/tablet): globo “solto” no fundo da página — sombra suave, sem anel escuro (como referência visual) */}
+      {/* Mapa (mobile/tablet): mesmo alinhamento horizontal da logo (max-w-6xl + px) */}
       {hero.showMap && (
-        <div className="2xl:hidden flex min-h-0 flex-1 basis-0 flex-col items-center justify-center py-3 sm:py-4 -translate-y-8 sm:-translate-y-10 md:landscape:-translate-y-12">
-          <div className="flex w-screen max-w-none justify-center ml-[calc(50%-50vw)]">
-            <div className="relative aspect-square w-[min(calc((100vw-2rem)*0.88),calc((100vh-110px)*0.88))] max-w-none overflow-hidden rounded-full bg-background shadow-[0_20px_60px_-12px_rgba(15,23,42,0.2),0_8px_28px_-6px_rgba(15,23,42,0.12)] ring-1 ring-black/5 md:landscape:w-[min(calc((100vw-2rem)*0.62),calc((100vh-168px)*0.62))] dark:shadow-[0_24px_64px_-12px_rgba(0,0,0,0.55)] dark:ring-white/10">
+        <div className="2xl:hidden flex w-full min-h-0 flex-1 basis-0 flex-col items-center justify-center py-4 sm:py-6">
+          <div className="flex w-full max-w-6xl justify-center">
+            <div className="relative aspect-square w-[min(100%,min(88vw,28rem))] sm:w-[min(100%,min(85vw,32rem))] max-w-full overflow-hidden rounded-full bg-background shadow-[0_20px_60px_-12px_rgba(15,23,42,0.2),0_8px_28px_-6px_rgba(15,23,42,0.12)] ring-1 ring-black/5 md:landscape:w-[min(100%,min(62vw,26rem))] dark:shadow-[0_24px_64px_-12px_rgba(0,0,0,0.55)] dark:ring-white/10">
               <Map
                 center={{ lng: -56, lat: -15 }}
                 zoom={HERO_MOBILE_GLOBE_ZOOM}
@@ -202,10 +203,10 @@ export default function Hero({ heroContent = null }: HeroProps) {
         </div>
       )}
 
-      {/* Mapa interativo dentro do círculo (desktop) */}
+      {/* Mapa interativo dentro do círculo (desktop) — alinhado à direita da coluna do grid */}
       {hero.showMap && (
-        <div className="pointer-events-auto absolute right-0 hidden pr-4 2xl:block z-0 top-24 2xl:top-36">
-          <div className="pointer-events-auto relative 2xl:h-[520px] 2xl:w-[520px] min-[1700px]:h-[560px] min-[1700px]:w-[560px] overflow-hidden rounded-full border border-zinc-900/60 shadow-[0_30px_120px_rgba(0,0,0,0.35)]">
+        <div className="pointer-events-auto absolute right-0 top-24 z-0 hidden pr-0 sm:pr-4 2xl:block 2xl:top-36">
+          <div className="pointer-events-auto relative h-[min(520px,calc(100vh-320px))] w-[min(520px,calc(100vw-28rem))] min-[1700px]:h-[560px] min-[1700px]:w-[560px] overflow-hidden rounded-full border border-zinc-900/60 shadow-[0_30px_120px_rgba(0,0,0,0.35)]">
             <Map
               center={{ lng: -56, lat: -15 }}
               zoom={2.1}
