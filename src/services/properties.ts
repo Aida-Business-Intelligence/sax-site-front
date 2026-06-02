@@ -23,17 +23,18 @@ export function mapApiPropertyToProperty(p: Record<string, unknown>): Property {
   const cover = (p.coverImage as Record<string, unknown>) ?? {};
   const type = p.type as string;
   const validType =
-    type === "casa" ||
-    type === "apartamento" ||
-    type === "terreno" ||
-    type === "comercial"
-      ? type
+    typeof type === "string" && type.trim() !== ""
+      ? type.trim()
       : "apartamento";
   const transactionTypes = Array.isArray(p.transactionTypes)
     ? (p.transactionTypes as string[])
     : undefined;
-  const comodidades = Array.isArray(p.comodidades) ? (p.comodidades as string[]) : undefined;
-  const tagImovel = Array.isArray(p.tagImovel) ? (p.tagImovel as string[]) : undefined;
+  const comodidades = Array.isArray(p.comodidades)
+    ? (p.comodidades as string[])
+    : undefined;
+  const tagImovel = Array.isArray(p.tagImovel)
+    ? (p.tagImovel as string[])
+    : undefined;
   const coverUrl = fullImageUrl(String(cover.url ?? ""));
   return {
     id: String(p.id),
@@ -75,14 +76,19 @@ export function mapApiPropertyToProperty(p: Record<string, unknown>): Property {
     amenities: [],
     ref: p.ref != null ? String(p.ref) : null,
     priceVenda:
-      p.priceVenda != null && Number.isFinite(Number(p.priceVenda)) && Number(p.priceVenda) > 0
+      p.priceVenda != null &&
+      Number.isFinite(Number(p.priceVenda)) &&
+      Number(p.priceVenda) > 0
         ? Number(p.priceVenda)
         : null,
     priceAluguel:
-      p.priceAluguel != null && Number.isFinite(Number(p.priceAluguel)) && Number(p.priceAluguel) > 0
+      p.priceAluguel != null &&
+      Number.isFinite(Number(p.priceAluguel)) &&
+      Number(p.priceAluguel) > 0
         ? Number(p.priceAluguel)
         : null,
-    priceCrowdfunding: p.priceCrowdfunding != null ? Number(p.priceCrowdfunding) : null,
+    priceCrowdfunding:
+      p.priceCrowdfunding != null ? Number(p.priceCrowdfunding) : null,
     transactionTypes,
     suites: p.suites != null ? Number(p.suites) : null,
     demiSuites: p.demiSuites != null ? Number(p.demiSuites) : null,
@@ -93,7 +99,8 @@ export function mapApiPropertyToProperty(p: Record<string, unknown>): Property {
     aceita_permuta: Boolean(p.aceita_permuta),
     em_construcao: Boolean(p.em_construcao),
     parceria: Boolean(p.parceria),
-    dataPrevistaEntrega: p.dataPrevistaEntrega != null ? String(p.dataPrevistaEntrega) : null,
+    dataPrevistaEntrega:
+      p.dataPrevistaEntrega != null ? String(p.dataPrevistaEntrega) : null,
     tagImovel,
     builder: p.builder != null ? String(p.builder) : undefined,
   };
@@ -553,10 +560,10 @@ export async function getSectionsWithProperties(): Promise<
       active.map(async (section) => {
         const list = await fetchPropertiesApi({ sectionId: section.id });
         const properties = list.map((p) =>
-          mapApiPropertyToProperty(p as Record<string, unknown>)
+          mapApiPropertyToProperty(p as Record<string, unknown>),
         );
         return { section, properties };
-      })
+      }),
     );
     return withProps.sort((a, b) => a.section.sortOrder - b.section.sortOrder);
   } catch {
@@ -617,7 +624,7 @@ export async function getProperties(): Promise<Property[]> {
     try {
       const list = await fetchPropertiesApi();
       return list.map((p) =>
-        mapApiPropertyToProperty(p as Record<string, unknown>)
+        mapApiPropertyToProperty(p as Record<string, unknown>),
       );
     } catch {
       return properties;
@@ -632,7 +639,7 @@ export async function getPropertiesFromApiOnly(): Promise<Property[]> {
   try {
     const list = await fetchPropertiesApi();
     return list.map((p) =>
-      mapApiPropertyToProperty(p as Record<string, unknown>)
+      mapApiPropertyToProperty(p as Record<string, unknown>),
     );
   } catch {
     return [];
@@ -640,7 +647,7 @@ export async function getPropertiesFromApiOnly(): Promise<Property[]> {
 }
 
 export async function getPropertyBySlug(
-  slug: string
+  slug: string,
 ): Promise<Property | undefined> {
   if (hasSaxApi()) {
     try {

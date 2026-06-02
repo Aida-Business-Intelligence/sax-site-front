@@ -2,7 +2,7 @@ import type { Property } from "@/types/realEstate";
 
 export function propertyHasTransactionType(
   p: Property,
-  modeValue: string
+  modeValue: string,
 ): boolean {
   const m = String(modeValue).toLowerCase().trim();
   const types = Array.isArray(p.transactionTypes) ? p.transactionTypes : [];
@@ -32,10 +32,7 @@ export function propertyMatchesStatus(p: Property, status: string): boolean {
         Boolean(p.dataPrevistaEntrega)
       );
     case "pronto":
-      return (
-        has("pronto") ||
-        (!p.em_construcao && !p.dataPrevistaEntrega)
-      );
+      return has("pronto") || (!p.em_construcao && !p.dataPrevistaEntrega);
     case "mobiliado":
       return p.mobiliado === true;
     case "sem-mobilia":
@@ -55,6 +52,8 @@ export type PropertyFilterValues = {
   type?: string;
   bedrooms?: string;
   priceRange?: string;
+  priceMin?: number;
+  priceMax?: number;
   builder?: string;
   /** Uma tag (lista /imoveis) */
   tag?: string;
@@ -71,11 +70,13 @@ export function applyFilter(
     type,
     bedrooms,
     priceRange,
+    priceMin,
+    priceMax,
     builder,
     tag,
     tags,
     status,
-  }: PropertyFilterValues
+  }: PropertyFilterValues,
 ): Property[] {
   const modeNorm = mode ? String(mode).toLowerCase().trim() : "venda";
 
@@ -92,9 +93,12 @@ export function applyFilter(
       const min = Number(bedrooms);
       if (!Number.isNaN(min) && p.bedrooms < min) return false;
     }
-    if (priceRange && priceRange !== "__all__") {
+    const hasRangeFilter = priceRange && priceRange !== "__all__";
+    const hasMinFilter = priceMin != null && Number.isFinite(priceMin);
+    const hasMaxFilter = priceMax != null && Number.isFinite(priceMax);
+    if (hasRangeFilter || hasMinFilter || hasMaxFilter) {
       const m = String(mode ?? "venda").toLowerCase();
-      const priceForRange =
+      const priceForFilter =
         (m === "aluguel" || m === "locação" || m === "locacao") &&
         p.priceAluguel != null &&
         Number(p.priceAluguel) > 0
@@ -106,21 +110,25 @@ export function applyFilter(
             : p.priceVenda != null && Number(p.priceVenda) > 0
               ? Number(p.priceVenda)
               : p.price;
-      if (priceRange === "lt500k" && !(priceForRange <= 500000)) return false;
-      if (
-        priceRange === "500k-1m" &&
-        !(priceForRange >= 500000 && priceForRange <= 1000000)
-      )
-        return false;
-      if (
-        priceRange === "1m-2m" &&
-        !(priceForRange >= 1000000 && priceForRange <= 2000000)
-      )
-        return false;
-      if (priceRange === "gt2m" && !(priceForRange > 2000000)) return false;
+      if (hasRangeFilter) {
+        if (priceRange === "lt500k" && !(priceForFilter <= 500000))
+          return false;
+        if (
+          priceRange === "500k-1m" &&
+          !(priceForFilter >= 500000 && priceForFilter <= 1000000)
+        )
+          return false;
+        if (
+          priceRange === "1m-2m" &&
+          !(priceForFilter >= 1000000 && priceForFilter <= 2000000)
+        )
+          return false;
+        if (priceRange === "gt2m" && !(priceForFilter > 2000000)) return false;
+      }
+      if (hasMinFilter && priceForFilter < priceMin!) return false;
+      if (hasMaxFilter && priceForFilter > priceMax!) return false;
     }
-    if (builder && builder !== "__all__" && p.builder !== builder)
-      return false;
+    if (builder && builder !== "__all__" && p.builder !== builder) return false;
 
     if (tags && tags.length > 0) {
       const tagList = p.tagImovel ?? [];
@@ -128,9 +136,7 @@ export function applyFilter(
         const rq = String(req).trim();
         if (!rq) continue;
         const hasTag = tagList.some(
-          (t) =>
-            t === rq ||
-            String(t).toLowerCase() === rq.toLowerCase()
+          (t) => t === rq || String(t).toLowerCase() === rq.toLowerCase(),
         );
         if (!hasTag) return false;
       }
