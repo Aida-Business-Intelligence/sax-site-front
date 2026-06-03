@@ -34,25 +34,37 @@ type HeroContent = {
   showMap?: boolean;
 };
 
-function normalizeHero(raw: HeroContent | null | undefined): Required<HeroContent> {
+function normalizeHero(
+  raw: HeroContent | null | undefined,
+): Required<HeroContent> {
   if (!raw || typeof raw !== "object") return { ...DEFAULT_HERO };
   return {
     title: typeof raw.title === "string" ? raw.title : DEFAULT_HERO.title,
-    subtitle: typeof raw.subtitle === "string" ? raw.subtitle : DEFAULT_HERO.subtitle,
+    subtitle:
+      typeof raw.subtitle === "string" ? raw.subtitle : DEFAULT_HERO.subtitle,
     titleDisplay:
       raw.titleDisplay === "oneLine" || raw.titleDisplay === "twoLines"
         ? raw.titleDisplay
         : DEFAULT_HERO.titleDisplay,
-    titleFontSize: ["small", "medium", "large"].includes(raw.titleFontSize ?? "")
+    titleFontSize: ["small", "medium", "large"].includes(
+      raw.titleFontSize ?? "",
+    )
       ? (raw.titleFontSize as "small" | "medium" | "large")
       : DEFAULT_HERO.titleFontSize,
-    buttonText: typeof raw.buttonText === "string" ? raw.buttonText : DEFAULT_HERO.buttonText,
+    buttonText:
+      typeof raw.buttonText === "string"
+        ? raw.buttonText
+        : DEFAULT_HERO.buttonText,
     buttonLinkType:
       raw.buttonLinkType === "whatsapp" || raw.buttonLinkType === "url"
         ? raw.buttonLinkType
         : DEFAULT_HERO.buttonLinkType,
-    buttonLink: typeof raw.buttonLink === "string" ? raw.buttonLink : DEFAULT_HERO.buttonLink,
-    showMap: typeof raw.showMap === "boolean" ? raw.showMap : DEFAULT_HERO.showMap,
+    buttonLink:
+      typeof raw.buttonLink === "string"
+        ? raw.buttonLink
+        : DEFAULT_HERO.buttonLink,
+    showMap:
+      typeof raw.showMap === "boolean" ? raw.showMap : DEFAULT_HERO.showMap,
   };
 }
 
@@ -61,7 +73,11 @@ function buildButtonHref(linkType: string, link: string): string {
     const digits = (link || "").replace(/\D/g, "");
     return digits ? `https://wa.me/${digits}` : "#";
   }
-  return link && link.startsWith("http") ? link : (link ? `https://${link}` : "#");
+  return link && link.startsWith("http")
+    ? link
+    : link
+      ? `https://${link}`
+      : "#";
 }
 
 const titleFontSizeClasses = {
@@ -75,7 +91,10 @@ type HeroProps = {
 };
 
 export default function Hero({ heroContent = null }: HeroProps) {
-  const hero = useMemo(() => normalizeHero(heroContent as HeroContent), [heroContent]);
+  const hero = useMemo(
+    () => normalizeHero(heroContent as HeroContent),
+    [heroContent],
+  );
 
   const [markers, setMarkers] = useState<
     { id: string; lng: number; lat: number }[]
@@ -93,8 +112,9 @@ export default function Hero({ heroContent = null }: HeroProps) {
             if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
             return { id: p.id, lng, lat };
           })
-          .filter((m): m is { id: string; lng: number; lat: number } => m != null) ??
-        [];
+          .filter(
+            (m): m is { id: string; lng: number; lat: number } => m != null,
+          ) ?? [];
       setMarkers(pts);
     });
     return () => {
@@ -143,7 +163,10 @@ export default function Hero({ heroContent = null }: HeroProps) {
               target="_blank"
               rel="noopener noreferrer"
               className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
-              onClick={() => hero.buttonLinkType === "whatsapp" && trackWhatsappClick({ source: "hero" })}
+              onClick={() =>
+                hero.buttonLinkType === "whatsapp" &&
+                trackWhatsappClick({ source: "hero" })
+              }
             >
               {hero.buttonText}
             </a>
@@ -220,8 +243,15 @@ export default function Hero({ heroContent = null }: HeroProps) {
         </div>
       )}
 
-      {/* No fluxo: não sobrepõe o globo; mobile com espaço após o mapa */}
-      <div className="relative z-20 mt-6 w-full shrink-0 sm:mt-8 2xl:mt-10">
+      {/* Filtro (desktop/tablet fixo próximo à base) */}
+      <div className="hidden 2xl:flex absolute inset-x-0 pb-24 sm:bottom-32 2xl:-bottom-72 justify-center px-4 sm:px-6 z-50">
+        <div className="w-full max-w-7xl relative z-50">
+          <HomeFilter />
+        </div>
+      </div>
+
+      {/* Filtro (mobile: no fluxo, abaixo do conteúdo) */}
+      <div className="2xl:hidden mt-0 shrink-0">
         <HomeFilter />
       </div>
     </section>

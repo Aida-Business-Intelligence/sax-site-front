@@ -13,10 +13,7 @@ import {
 import type { TagDto } from "@/lib/sax-api";
 import type { Property } from "@/types/realEstate";
 import { MapPin, ArrowLeftRight, Home, Tag, Bed } from "lucide-react";
-import {
-  applyFilter,
-  type PropertyFilterValues,
-} from "@/lib/property-filter";
+import { applyFilter, type PropertyFilterValues } from "@/lib/property-filter";
 
 const FALLBACK_TRANSACTION_TYPES: TransactionTypeOption[] = [
   { value: "venda", label: "Venda" },
@@ -30,12 +27,7 @@ function hasValidMapCoords(p: Property): boolean {
   const lng = Number(p.address?.lng);
   return Number.isFinite(lat) && Number.isFinite(lng);
 }
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -48,12 +40,31 @@ import {
 } from "@/components/ui/select";
 import Link from "next/link";
 import PropertyDialog from "@/components/modals/PropertyDialog";
-import HomeFilter, { type FormValues as HomeFilterValues } from "@/sections/home/HomeFilter";
+import HomeFilter, {
+  type FormValues as HomeFilterValues,
+} from "@/sections/home/HomeFilter";
 
 const schema = z.object({
   city: z.string().optional(),
   mode: z.string().default("venda"),
-  type: z.enum(["casa", "apartamento", "terreno", "comercial"]).optional(),
+  type: z
+    .enum([
+      "casa",
+      "casa_condominio",
+      "apartamento",
+      "duplex",
+      "master",
+      "flat",
+      "cobertura",
+      "terraco",
+      "terreno",
+      "sala",
+      "galpao",
+      "kitnet",
+      "studio",
+      "comercial",
+    ])
+    .optional(),
   bedrooms: z.string().optional(),
   priceRange: z.enum(["lt500k", "500k-1m", "1m-2m", "gt2m"]).optional(),
   tag: z.string().optional(),
@@ -81,7 +92,8 @@ function buildImoveisListHref(v: FormValues): string {
   if (v.city && v.city !== "__all__") params.set("city", v.city);
   if (v.mode) params.set("mode", v.mode);
   if (v.type) params.set("type", v.type);
-  if (v.bedrooms && v.bedrooms !== "__all__") params.set("bedrooms", v.bedrooms);
+  if (v.bedrooms && v.bedrooms !== "__all__")
+    params.set("bedrooms", v.bedrooms);
   if (v.priceRange) params.set("priceRange", v.priceRange);
   if (v.tag && v.tag !== "__all__") params.set("tag", v.tag);
   if (v.builder && v.builder !== "__all__") params.set("builder", v.builder);
@@ -90,7 +102,9 @@ function buildImoveisListHref(v: FormValues): string {
 }
 
 export default function MapaPage() {
-  const [transactionTypes, setTransactionTypes] = useState<TransactionTypeOption[]>(FALLBACK_TRANSACTION_TYPES);
+  const [transactionTypes, setTransactionTypes] = useState<
+    TransactionTypeOption[]
+  >(FALLBACK_TRANSACTION_TYPES);
   const defaultMode = transactionTypes[0]?.value ?? "venda";
 
   const form = useForm<FormValues>({
@@ -165,7 +179,7 @@ export default function MapaPage() {
     mapRef.current = map;
     map.addControl(
       new mapboxgl.NavigationControl({ showCompass: false }),
-      "top-right"
+      "top-right",
     );
     map.on("style.load", () => {
       const mapApi = map as unknown as {
@@ -186,7 +200,7 @@ export default function MapaPage() {
         try {
           const layers = map.getStyle().layers ?? [];
           const labelLayerId = layers.find(
-            (l) => l.type === "symbol" && (l.layout as any)?.["text-field"]
+            (l) => l.type === "symbol" && (l.layout as any)?.["text-field"],
           )?.id;
           map.addLayer(
             {
@@ -219,7 +233,7 @@ export default function MapaPage() {
                 "fill-extrusion-opacity": 0.6,
               },
             },
-            labelLayerId ?? undefined
+            labelLayerId ?? undefined,
           );
         } catch {}
       }
@@ -231,7 +245,7 @@ export default function MapaPage() {
   // Format price as pill HTML marker with click handler
   function createPriceMarkerEl(
     property: Property,
-    onClick: () => void
+    onClick: () => void,
   ): HTMLElement {
     const el = document.createElement("button");
     el.type = "button";
@@ -272,7 +286,7 @@ export default function MapaPage() {
         .sort(
           (a, b) =>
             (a.sortOrder ?? 0) - (b.sortOrder ?? 0) ||
-            a.name.localeCompare(b.name)
+            a.name.localeCompare(b.name),
         )
         .map((t) => t.name);
     }
@@ -288,7 +302,7 @@ export default function MapaPage() {
       { value: "__all__", label: "Todas" },
       ...builderOptions.map((name) => ({ value: name, label: name })),
     ],
-    [builderOptions]
+    [builderOptions],
   );
 
   useEffect(() => {
@@ -325,12 +339,17 @@ export default function MapaPage() {
         (p) =>
           p.address.city === cityName &&
           p.address.state === state &&
-          hasValidMapCoords(p)
+          hasValidMapCoords(p),
       );
       bounds = cityItems.length ? addMarkersAndGetBounds(cityItems) : null;
     }
 
-    if (bounds && !bounds.isEmpty() && watchValues.city && watchValues.city !== "__all__") {
+    if (
+      bounds &&
+      !bounds.isEmpty() &&
+      watchValues.city &&
+      watchValues.city !== "__all__"
+    ) {
       const isMobile =
         typeof window !== "undefined" &&
         window.matchMedia?.("(max-width: 767px)").matches;
@@ -461,11 +480,22 @@ export default function MapaPage() {
                           <SelectContent>
                             <SelectItem value="__all__">Todos</SelectItem>
                             <SelectItem value="casa">Casa</SelectItem>
+                            <SelectItem value="casa_condominio">
+                              Casa Condomínio
+                            </SelectItem>
                             <SelectItem value="apartamento">
                               Apartamento
                             </SelectItem>
+                            <SelectItem value="duplex">Duplex</SelectItem>
+                            <SelectItem value="master">Master</SelectItem>
+                            <SelectItem value="flat">Flat</SelectItem>
+                            <SelectItem value="cobertura">Cobertura</SelectItem>
+                            <SelectItem value="terraco">Terraço</SelectItem>
                             <SelectItem value="terreno">Terreno</SelectItem>
-                            <SelectItem value="comercial">Comercial</SelectItem>
+                            <SelectItem value="sala">Sala</SelectItem>
+                            <SelectItem value="galpao">Galpão</SelectItem>
+                            <SelectItem value="kitnet">Kitnet</SelectItem>
+                            <SelectItem value="studio">Studio</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -532,7 +562,9 @@ export default function MapaPage() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="__all__">Todos</SelectItem>
-                            <SelectItem value="lt500k">Até R$ 500.000</SelectItem>
+                            <SelectItem value="lt500k">
+                              Até R$ 500.000
+                            </SelectItem>
                             <SelectItem value="500k-1m">
                               R$ 500.000 - R$ 1.000.000
                             </SelectItem>
@@ -652,30 +684,26 @@ export default function MapaPage() {
           onSearch={(values: HomeFilterValues) => {
             form.setValue("city", values.city ?? undefined);
             form.setValue("mode", values.mode ?? defaultMode);
-            form.setValue("type", values.type ?? undefined);
+            form.setValue(
+              "type",
+              (values.type ?? undefined) as FormValues["type"],
+            );
             form.setValue(
               "bedrooms",
               values.bedrooms && values.bedrooms !== "__all__"
                 ? values.bedrooms
-                : undefined
+                : undefined,
             );
-            form.setValue(
-              "priceRange",
-              values.priceRange && values.priceRange !== "__all__"
-                ? (values.priceRange as FormValues["priceRange"])
-                : undefined
-            );
+            form.setValue("priceRange", undefined);
             form.setValue(
               "tag",
-              values.tag?.length
-                ? values.tag[0]
-                : undefined
+              values.tag?.length ? values.tag[0] : undefined,
             );
             form.setValue(
               "builder",
               values.builder && values.builder !== "__all__"
                 ? values.builder
-                : undefined
+                : undefined,
             );
             const map = mapRef.current;
             if (!map) return;
@@ -690,10 +718,8 @@ export default function MapaPage() {
                 values.bedrooms && values.bedrooms !== "__all__"
                   ? values.bedrooms
                   : undefined,
-              priceRange:
-                values.priceRange && values.priceRange !== "__all__"
-                  ? values.priceRange
-                  : undefined,
+              priceMin: values.priceMin,
+              priceMax: values.priceMax,
               builder:
                 values.builder && values.builder !== "__all__"
                   ? values.builder
@@ -704,15 +730,21 @@ export default function MapaPage() {
                   : undefined,
             };
             const match = applyFilter(allProperties ?? [], payload).filter(
-              hasValidMapCoords
+              hasValidMapCoords,
             );
             if (match.length) {
               const bounds = new mapboxgl.LngLatBounds();
               match.forEach((p) => {
                 bounds.extend([Number(p.address.lng), Number(p.address.lat)]);
               });
-              map.fitBounds(bounds, { padding: 60, duration: 700, maxZoom: 14 });
-              map.once("moveend", () => map.easeTo({ padding: 0, duration: 0 }));
+              map.fitBounds(bounds, {
+                padding: 60,
+                duration: 700,
+                maxZoom: 14,
+              });
+              map.once("moveend", () =>
+                map.easeTo({ padding: 0, duration: 0 }),
+              );
             }
             try {
               window.dispatchEvent(new CustomEvent("close-map-filters"));

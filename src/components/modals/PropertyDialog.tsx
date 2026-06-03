@@ -15,8 +15,18 @@ type Props = {
 
 const TYPE_LABEL: Record<Property["type"], string> = {
   casa: "Casa",
+  casa_condominio: "Casa Condomínio",
   apartamento: "Apartamento",
+  duplex: "Duplex",
+  master: "Master",
+  flat: "Flat",
+  cobertura: "Cobertura",
+  terraco: "Terraço",
   terreno: "Terreno",
+  sala: "Sala",
+  galpao: "Galpão",
+  kitnet: "Kitnet",
+  studio: "Studio",
   comercial: "Comercial",
 };
 
@@ -48,7 +58,11 @@ function formatMoney(n: number | null | undefined): string | null {
   });
 }
 
-export default function PropertyDialog({ open, property, onOpenChange }: Props) {
+export default function PropertyDialog({
+  open,
+  property,
+  onOpenChange,
+}: Props) {
   const [detail, setDetail] = useState<Property | null>(null);
   const [loading, setLoading] = useState(false);
 
