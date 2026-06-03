@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
 import Image from "next/image";
 import React from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import type { ExclusiveProjectsContent } from "@/lib/exclusive-projects-content";
 import { resolveExclusiveProjectImageUrl } from "@/lib/exclusive-projects-content";
@@ -12,7 +13,9 @@ type Props = {
 
 export function FinalShowcaseSection({ showcase }: Props) {
   const [index, setIndex] = React.useState(0);
-  const galleryUrls = showcase.galleryUrls.map((u) => resolveExclusiveProjectImageUrl(u));
+  const galleryUrls = showcase.galleryUrls.map((u) =>
+    resolveExclusiveProjectImageUrl(u),
+  );
   const total = Math.max(galleryUrls.length, 1);
 
   const prev = () => setIndex((i) => (i - 1 + total) % total);
@@ -49,7 +52,10 @@ export function FinalShowcaseSection({ showcase }: Props) {
               style={{ transform: `translateX(-${index * 100}%)` }}
             >
               {galleryUrls.map((src, i) => (
-                <div key={`${src}-${i}`} className="relative h-full w-full flex-shrink-0">
+                <div
+                  key={`${src}-${i}`}
+                  className="relative h-full w-full flex-shrink-0"
+                >
                   <Image
                     src={src}
                     alt={`Projeto ${i + 1}`}
@@ -66,17 +72,17 @@ export function FinalShowcaseSection({ showcase }: Props) {
               type="button"
               onClick={prev}
               aria-label="Anterior"
-              className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-[#19F5CC] p-2 text-black shadow hover:opacity-90"
+              className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white shadow transition hover:bg-black/70 active:scale-95"
             >
-              ‹
+              <ChevronLeft className="size-5" />
             </button>
             <button
               type="button"
               onClick={next}
               aria-label="Próximo"
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-[#19F5CC] p-2 text-black shadow hover:opacity-90"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white shadow transition hover:bg-black/70 active:scale-95"
             >
-              ›
+              <ChevronRight className="size-5" />
             </button>
           </div>
 

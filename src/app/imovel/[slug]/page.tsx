@@ -24,6 +24,31 @@ import {
 export const revalidate = 0; // sempre dados frescos ao recarregar
 export const dynamic = "force-dynamic";
 
+/** Mapeamento dos valores do backend para labels exibidos ao usuário. */
+const COMODIDADES_LABELS: Record<string, string> = {
+  piscina: "Piscina",
+  salao_festas: "Salão de Festas",
+  area_servico: "Área de Serviço",
+  cameras_seguranca: "Câmeras de Segurança",
+  churrasqueira: "Churrasqueira",
+  quadra_esportiva: "Quadra Esportiva",
+  elevador: "Elevador",
+  garagem_coberta: "Garagem Coberta",
+  academia: "Academia",
+  jardim: "Jardim",
+  portaria_24h: "Portaria 24h",
+  playground: "Playground",
+  varanda: "Varanda",
+  interfone: "Interfone",
+};
+
+function formatComodidade(value: string): string {
+  return (
+    COMODIDADES_LABELS[value] ??
+    value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  );
+}
+
 type Props = {
   params: Promise<{ slug: string }>;
 };
@@ -160,7 +185,7 @@ export default async function ImovelPage({ params }: Props) {
           ) : null}
         </div>
         <div className="grid gap-10 2xl:grid-cols-2">
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             <PropertyImageGallery
               key={property.slug}
               title={property.title}
@@ -348,7 +373,7 @@ export default async function ImovelPage({ params }: Props) {
                           key={c}
                           className="rounded-full bg-zinc-200 px-3 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300"
                         >
-                          {c}
+                          {formatComodidade(c)}
                         </span>
                       ))}
                     </div>

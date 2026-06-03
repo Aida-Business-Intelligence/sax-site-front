@@ -21,7 +21,10 @@ export default function Header({ logoSrc = null }: HeaderProps) {
     { href: "/feed", label: "Feed" },
     { href: "/sobre", label: "Sobre nós" },
     { href: "/projetos-exclusivos", label: "Projetos exclusivos" },
-    { href: "https://open.spotify.com/show/1BLwMlTNBV1vS6jjLbQWL3", label: "Podcast" },
+    {
+      href: "https://open.spotify.com/show/1BLwMlTNBV1vS6jjLbQWL3",
+      label: "Podcast",
+    },
     { href: "/blog", label: "Blog" },
   ];
   const isActive = (href: string) =>
@@ -158,7 +161,7 @@ function MobileMenu({
       <AnimatePresence>
         {open ? (
           <motion.div
-            className="fixed inset-0 z-[80] 2xl:hidden"
+            className="fixed inset-0 z-[80] overflow-hidden 2xl:hidden"
             aria-modal="true"
             role="dialog"
             initial={{ opacity: 0 }}
@@ -180,7 +183,9 @@ function MobileMenu({
               transition={{ type: "spring", stiffness: 320, damping: 28 }}
             >
               <div className="flex items-center justify-between px-4 py-3 border-b border-white/20 text-zinc-900 dark:text-zinc-100">
-                <span className="text-sm font-semibold tracking-wide">Menu</span>
+                <span className="text-sm font-semibold tracking-wide">
+                  Menu
+                </span>
                 <button
                   type="button"
                   aria-label="Fechar menu"
@@ -261,5 +266,3 @@ function MobileMenu({
     </>
   );
 }
-
-
