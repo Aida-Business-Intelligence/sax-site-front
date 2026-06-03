@@ -94,7 +94,7 @@ export function PropertyImageGallery({ title, cover, images }: Props) {
               type="button"
               onClick={prev}
               aria-label="Foto anterior"
-              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white shadow transition hover:bg-black/70 active:scale-95"
+              className="absolute left-2 top-1/2 -translate-y-1/2 cursor-pointer rounded-full bg-black/50 p-2 text-white shadow transition hover:bg-black/70 active:scale-95"
             >
               <ChevronLeft className="size-5" />
             </button>
@@ -102,7 +102,7 @@ export function PropertyImageGallery({ title, cover, images }: Props) {
               type="button"
               onClick={next}
               aria-label="Próxima foto"
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white shadow transition hover:bg-black/70 active:scale-95"
+              className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer rounded-full bg-black/50 p-2 text-white shadow transition hover:bg-black/70 active:scale-95"
             >
               <ChevronRight className="size-5" />
             </button>
