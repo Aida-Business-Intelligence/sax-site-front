@@ -39,6 +39,28 @@ function isCompleted(): boolean {
   return window.localStorage.getItem(STORAGE_DONE) === "1";
 }
 
+// Modo Caca: escopo restrito a Balneario Camboriu (cidade) e Praia Brava (bairro de Itajai).
+// Por design, isso tambem exclui outras cidades (Itajai-centro, Itapema, Picarras, etc.).
+// Casa por cidade OU bairro (a mesma localidade pode vir cadastrada em qualquer um dos campos).
+const HUNT_ALLOWED_LOCATIONS = ["balneario camboriu", "praia brava"];
+
+function normalizeLocation(v: string | undefined | null): string {
+  return String(v ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // remove acentos
+    .toLowerCase()
+    .trim();
+}
+
+function matchesHuntLocation(p: Property): boolean {
+  const city = normalizeLocation(p.address?.city);
+  const neighborhood = normalizeLocation(p.address?.neighborhood);
+  return (
+    HUNT_ALLOWED_LOCATIONS.includes(city) ||
+    HUNT_ALLOWED_LOCATIONS.includes(neighborhood)
+  );
+}
+
 function filterMatches(
   list: Property[],
   mode: Mode,
@@ -47,6 +69,7 @@ function filterMatches(
   priceRange: PriceRangeKey,
 ): Property[] {
   return list.filter((p) => {
+    if (!matchesHuntLocation(p)) return false;
     if (p.type !== kind) return false;
     if (p.bedrooms < bedroomsMin) return false;
 

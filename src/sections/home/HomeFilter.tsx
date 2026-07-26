@@ -25,6 +25,7 @@ import {
 import type { TagDto } from "@/lib/sax-api";
 import { usePropertyTypes } from "@/hooks/usePropertyTypes";
 import { getPropertyTypeLabel } from "@/lib/property-types";
+import { normalizeBuilderName } from "@/lib/property-filter";
 
 const FALLBACK_TRANSACTION_TYPES: TransactionTypeOption[] = [
   { value: "venda", label: "Venda" },
@@ -163,9 +164,16 @@ export default function HomeFilter({
   }, [apiTags, properties]);
 
   const builderOptions = useMemo(() => {
-    const set = new Set<string>();
-    (properties ?? []).forEach((p) => p.builder && set.add(p.builder));
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
+    // Dedupe por nome normalizado (sem acento, minúsculo, espaços colapsados),
+    // mantendo o primeiro rótulo original visto. Preserva a ordenação atual.
+    const byKey = new Map<string, string>();
+    (properties ?? []).forEach((p) => {
+      const name = p.builder?.trim();
+      if (!name) return;
+      const key = normalizeBuilderName(name);
+      if (!byKey.has(key)) byKey.set(key, name);
+    });
+    return Array.from(byKey.values()).sort((a, b) => a.localeCompare(b));
   }, [properties]);
 
   const builderSelectItems = useMemo(

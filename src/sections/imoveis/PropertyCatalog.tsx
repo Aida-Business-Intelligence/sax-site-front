@@ -27,7 +27,7 @@ import MapTeaser from "./MapTeaser";
 import PartnersSection from "./PartnersSection";
 import { MapPin, ArrowLeftRight, Home, Tag, Bed } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { applyFilter } from "@/lib/property-filter";
+import { applyFilter, normalizeBuilderName } from "@/lib/property-filter";
 import { usePropertyTypes } from "@/hooks/usePropertyTypes";
 
 function getParam(
@@ -237,14 +237,17 @@ function PropertyCatalog({
 
   const builderOptions = useMemo(() => {
     const { city } = watchValues;
-    const set = new Set<string>();
+    // Dedupe por nome normalizado, mantendo o primeiro rótulo original.
+    const byKey = new Map<string, string>();
     (properties ?? []).forEach((p) => {
       const cityKey = `${p.address.city}-${p.address.state}`;
-      if (!p.builder) return;
+      const name = p.builder?.trim();
+      if (!name) return;
       if (city && cityKey !== city) return;
-      set.add(p.builder);
+      const key = normalizeBuilderName(name);
+      if (!byKey.has(key)) byKey.set(key, name);
     });
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
+    return Array.from(byKey.values()).sort((a, b) => a.localeCompare(b));
   }, [properties, watchValues.city]);
 
   const builderSelectItems = useMemo(

@@ -77,7 +77,7 @@ export default function Header({ logoSrc = null }: HeaderProps) {
             ) : (
               <Image
                 src={DEFAULT_LOGO}
-                alt="SAX Imóveis"
+                alt="SAX Negócios Imobiliários"
                 width={140}
                 height={36}
                 priority
