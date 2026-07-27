@@ -13,7 +13,11 @@ import {
 import type { TagDto } from "@/lib/sax-api";
 import type { Property } from "@/types/realEstate";
 import { MapPin, ArrowLeftRight, Home, Tag, Bed } from "lucide-react";
-import { applyFilter, type PropertyFilterValues } from "@/lib/property-filter";
+import {
+  applyFilter,
+  normalizeBuilderName,
+  type PropertyFilterValues,
+} from "@/lib/property-filter";
 
 const FALLBACK_TRANSACTION_TYPES: TransactionTypeOption[] = [
   { value: "venda", label: "Venda" },
@@ -270,14 +274,17 @@ export default function MapaPage() {
 
   const builderOptions = useMemo(() => {
     const { city } = watchValues;
-    const set = new Set<string>();
+    // Dedupe por nome normalizado, mantendo o primeiro rótulo original.
+    const byKey = new Map<string, string>();
     (allProperties ?? []).forEach((p) => {
-      if (!p.builder) return;
+      const name = p.builder?.trim();
+      if (!name) return;
       const cityKey = `${p.address.city}-${p.address.state}`;
       if (city && city !== "__all__" && cityKey !== city) return;
-      set.add(p.builder);
+      const key = normalizeBuilderName(name);
+      if (!byKey.has(key)) byKey.set(key, name);
     });
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
+    return Array.from(byKey.values()).sort((a, b) => a.localeCompare(b));
   }, [allProperties, watchValues.city]);
 
   const tagOptions = useMemo(() => {

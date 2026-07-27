@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
+import { MapPinned } from "lucide-react";
 import Map from "@/components/map/Map";
 import { siteMapStyle } from "@/lib/mapbox";
 import { getPropertiesFromApiOnly } from "@/services/properties";
@@ -170,6 +172,13 @@ export default function Hero({ heroContent = null }: HeroProps) {
             >
               {hero.buttonText}
             </a>
+            <Link
+              href="/imoveis/mapa"
+              className="inline-flex items-center gap-2 rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            >
+              <MapPinned className="size-4" />
+              Navegar pelo Mapa
+            </Link>
           </motion.div>
         </div>
         {/* Espaçador para manter o layout do grid; o globo fica absoluto sobre o canto direito */}
@@ -200,6 +209,13 @@ export default function Hero({ heroContent = null }: HeroProps) {
               />
             </div>
           </div>
+          <Link
+            href="/imoveis/mapa"
+            className="mt-4 inline-flex items-center gap-2 rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+          >
+            <MapPinned className="size-4" />
+            Navegar pelo Mapa
+          </Link>
         </div>
       )}
 
