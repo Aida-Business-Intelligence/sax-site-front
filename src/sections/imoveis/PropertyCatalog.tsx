@@ -25,6 +25,7 @@ import FeaturedBanner from "./FeaturedBanner";
 import FeaturedCarousel from "./FeaturedCarousel";
 import MapTeaser from "./MapTeaser";
 import PartnersSection from "./PartnersSection";
+import PropertyCard from "@/components/cards/PropertyCard";
 import { MapPin, ArrowLeftRight, Home, Tag, Bed } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { applyFilter, normalizeBuilderName } from "@/lib/property-filter";
@@ -594,6 +595,26 @@ function PropertyCatalog({
       </div>
 
       {/* Drawer anterior do mobile removido em favor do HomeFilter compartilhado */}
+
+      {/* Todos os imóveis — grade completa logo abaixo do filtro (respeita a busca) */}
+      {filtered.length > 0 && (
+        <section className="mx-auto w-full max-w-7xl px-4 pb-10 pt-4 sm:px-6">
+          <div className="mb-4 flex items-baseline justify-between">
+            <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
+              Todos os imóveis
+            </h2>
+            <span className="text-sm text-zinc-500 dark:text-zinc-400">
+              {filtered.length}{" "}
+              {filtered.length === 1 ? "imóvel" : "imóveis"}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filtered.map((p) => (
+              <PropertyCard key={p.id} property={p} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Seções vindas do backend (só aparecem as que você cadastrou) */}
       {displaySections.map(({ section, properties: sectionProps }) => (
