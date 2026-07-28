@@ -1,5 +1,5 @@
 export const siteConfig = {
-	name: "SAX Imobiliária",
+	name: "SAX Negócios Imobiliários",
 	description:
 		"Imobiliária premium com imóveis selecionados, experiência moderna e foco em geração de leads.",
 	url: "https://www.exemplo-imobiliaria.com",

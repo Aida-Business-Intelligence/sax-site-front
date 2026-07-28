@@ -15,7 +15,7 @@ type FooterContent = {
 
 const DEFAULT: FooterContent = {
   creciLocation: "CRECI: 7587J — Riviera Business Mall - Praia Brava / Itajaí",
-  copyrightText: "SAX Imóveis. Todos os direitos reservados.",
+  copyrightText: "SAX Negócios Imobiliários. Todos os direitos reservados.",
   favoritosHref: "/favoritos",
   favoritosLabel: "imóveis favoritos",
   facebookUrl: "",

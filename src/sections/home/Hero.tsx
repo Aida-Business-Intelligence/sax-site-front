@@ -2,14 +2,19 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
+import { MapPinned } from "lucide-react";
 import Map from "@/components/map/Map";
 import { siteMapStyle } from "@/lib/mapbox";
 import { getPropertiesFromApiOnly } from "@/services/properties";
 import HomeFilter from "@/sections/home/HomeFilter";
 import { trackWhatsappClick } from "@/lib/tracking";
 
-/** Globo mobile/tablet: abre neste zoom e não permite afastar mais que isso (América do Sul em destaque). */
-const HERO_MOBILE_GLOBE_ZOOM = 2.4;
+/** Home: o mapa abre focado na região dos imóveis (Balneário Camboriú / Praia Brava),
+ *  já com os pins carregados — em vez de um globo do mundo. */
+const HERO_MAP_CENTER = { lng: -48.635, lat: -26.97 };
+const HERO_MAP_ZOOM = 11;
+const HERO_MAP_MIN_ZOOM = 9;
 
 const DEFAULT_HERO = {
   title: "Imóveis selecionados para um estilo de vida premium",
@@ -170,6 +175,13 @@ export default function Hero({ heroContent = null }: HeroProps) {
             >
               {hero.buttonText}
             </a>
+            <Link
+              href="/imoveis/mapa"
+              className="inline-flex items-center gap-2 rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            >
+              <MapPinned className="size-4" />
+              Navegar pelo Mapa
+            </Link>
           </motion.div>
         </div>
         {/* Espaçador para manter o layout do grid; o globo fica absoluto sobre o canto direito */}
@@ -182,9 +194,9 @@ export default function Hero({ heroContent = null }: HeroProps) {
           <div className="flex w-full max-w-6xl justify-center">
             <div className="relative aspect-square w-[min(100%,min(88vw,28rem))] sm:w-[min(100%,min(85vw,32rem))] max-w-full overflow-hidden rounded-full bg-background shadow-[0_20px_60px_-12px_rgba(15,23,42,0.2),0_8px_28px_-6px_rgba(15,23,42,0.12)] ring-1 ring-black/5 md:landscape:w-[min(100%,min(62vw,26rem))] dark:shadow-[0_24px_64px_-12px_rgba(0,0,0,0.55)] dark:ring-white/10">
               <Map
-                center={{ lng: -56, lat: -15 }}
-                zoom={HERO_MOBILE_GLOBE_ZOOM}
-                minZoom={HERO_MOBILE_GLOBE_ZOOM}
+                center={HERO_MAP_CENTER}
+                zoom={HERO_MAP_ZOOM}
+                minZoom={HERO_MAP_MIN_ZOOM}
                 pitch={0}
                 bearing={0}
                 styleUrl={siteMapStyle}
@@ -193,13 +205,18 @@ export default function Hero({ heroContent = null }: HeroProps) {
                 markers={markers}
                 markerStyle="neon-blue"
                 show3DBuildings
-                autoRotate
-                autoRotateSpeedDegPerSec={1.0}
                 showControls={false}
                 className="h-full w-full"
               />
             </div>
           </div>
+          <Link
+            href="/imoveis/mapa"
+            className="mt-4 inline-flex items-center gap-2 rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+          >
+            <MapPinned className="size-4" />
+            Navegar pelo Mapa
+          </Link>
         </div>
       )}
 
@@ -208,9 +225,9 @@ export default function Hero({ heroContent = null }: HeroProps) {
         <div className="pointer-events-auto absolute right-0 top-24 z-0 hidden pr-0 sm:pr-4 2xl:block 2xl:top-36">
           <div className="pointer-events-auto relative h-[min(520px,calc(100vh-320px))] w-[min(520px,calc(100vw-28rem))] min-[1700px]:h-[560px] min-[1700px]:w-[560px] overflow-hidden rounded-full border border-zinc-900/60 shadow-[0_30px_120px_rgba(0,0,0,0.35)]">
             <Map
-              center={{ lng: -56, lat: -15 }}
-              zoom={2.1}
-              minZoom={2.1}
+              center={HERO_MAP_CENTER}
+              zoom={HERO_MAP_ZOOM}
+              minZoom={HERO_MAP_MIN_ZOOM}
               pitch={0}
               bearing={0}
               styleUrl={siteMapStyle}
@@ -218,8 +235,6 @@ export default function Hero({ heroContent = null }: HeroProps) {
               markers={markers}
               markerStyle="neon-blue"
               show3DBuildings
-              autoRotate
-              autoRotateSpeedDegPerSec={1.0}
               className="h-full w-full"
             />
             <div

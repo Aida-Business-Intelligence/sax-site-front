@@ -1,5 +1,23 @@
 import type { Property } from "@/types/realEstate";
 
+/**
+ * Normaliza o nome de uma construtora para deduplicar/comparar:
+ * remove acentos, colapsa espaços, minúsculas e trim. Usado tanto no
+ * dedupe do dropdown quanto no casamento do filtro (senão selecionar a
+ * opção canônica excluiria imóveis gravados com outra grafia).
+ */
+export function normalizeBuilderName(s: string | null | undefined): string {
+  return Array.from(String(s ?? "").normalize("NFD"))
+    .filter((ch) => {
+      const c = ch.codePointAt(0) ?? 0;
+      return c < 0x300 || c > 0x36f; // remove marcas de acento (U+0300–U+036F)
+    })
+    .join("")
+    .toLowerCase()
+    .replace(/ +/g, " ")
+    .trim();
+}
+
 export function propertyHasTransactionType(
   p: Property,
   modeValue: string,
@@ -128,7 +146,12 @@ export function applyFilter(
       if (hasMinFilter && priceForFilter < priceMin!) return false;
       if (hasMaxFilter && priceForFilter > priceMax!) return false;
     }
-    if (builder && builder !== "__all__" && p.builder !== builder) return false;
+    if (
+      builder &&
+      builder !== "__all__" &&
+      normalizeBuilderName(p.builder) !== normalizeBuilderName(builder)
+    )
+      return false;
 
     if (tags && tags.length > 0) {
       const tagList = p.tagImovel ?? [];

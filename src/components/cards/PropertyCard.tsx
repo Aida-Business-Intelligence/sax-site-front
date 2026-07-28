@@ -11,6 +11,11 @@ function hasValidCoverUrl(property: Property): boolean {
 
 export default function PropertyCard({ property }: { property: Property }) {
   const showImage = hasValidCoverUrl(property);
+  // Muitos imóveis têm `bathrooms` = 0 no cadastro mas têm suítes preenchidas.
+  // Para o card não exibir "0 banheiros" (e bater com a página de detalhe, que
+  // esconde banheiros quando é 0 e mostra as suítes), usa a suíte como fallback.
+  const banheiros =
+    property.bathrooms > 0 ? property.bathrooms : property.suites ?? 0;
 
   return (
     <Link
@@ -52,13 +57,14 @@ export default function PropertyCard({ property }: { property: Property }) {
               {property.bedrooms === 1 ? "dormitório" : "dormitórios"}
             </span>
           </li>
-          <li className="inline-flex items-center gap-1">
-            <Bath className="size-3.5 shrink-0 opacity-70" aria-hidden />
-            <span>
-              {property.bathrooms}{" "}
-              {property.bathrooms === 1 ? "banheiro" : "banheiros"}
-            </span>
-          </li>
+          {banheiros > 0 && (
+            <li className="inline-flex items-center gap-1">
+              <Bath className="size-3.5 shrink-0 opacity-70" aria-hidden />
+              <span>
+                {banheiros} {banheiros === 1 ? "banheiro" : "banheiros"}
+              </span>
+            </li>
+          )}
         </ul>
         <p className="mt-2 text-sm font-medium text-zinc-900 dark:text-zinc-100">
           {property.price.toLocaleString("pt-BR", {
