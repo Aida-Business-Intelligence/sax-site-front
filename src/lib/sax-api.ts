@@ -4,9 +4,12 @@
  */
 
 export function getSaxApiBase(): string {
+  // No navegador: passa pelo proxy do próprio site (/api/sax) — que tem cache +
+  // retry — em vez de bater direto no dev-sax (fraco, devolve 503 sob carga).
   if (typeof window !== "undefined") {
-    return (process.env.NEXT_PUBLIC_SAX_API_URL ?? "").trim().replace(/\/$/, "");
+    return "/api/sax";
   }
+  // No servidor (SSR): bate direto no dev-sax.
   return (process.env.NEXT_PUBLIC_SAX_API_URL ?? "").trim().replace(/\/$/, "");
 }
 

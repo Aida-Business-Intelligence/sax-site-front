@@ -1,4 +1,5 @@
 import Hero from "@/sections/home/Hero";
+import CategoriasImoveis from "@/sections/home/CategoriasImoveis";
 import FeaturedImoveis from "@/sections/home/FeaturedImoveis";
 import {
   getSiteConfig,
@@ -20,6 +21,7 @@ export default async function Home() {
         heroContent={config?.heroContent ?? null}
         initialProperties={properties}
       />
+      <CategoriasImoveis properties={properties} />
       <FeaturedImoveis properties={properties} />
     </>
   );
