@@ -9,6 +9,7 @@ import { siteMapStyle } from "@/lib/mapbox";
 import { getPropertiesFromApiOnly } from "@/services/properties";
 import HomeFilter from "@/sections/home/HomeFilter";
 import { trackWhatsappClick } from "@/lib/tracking";
+import type { Property } from "@/types/realEstate";
 
 /** Home: o mapa abre focado na região dos imóveis (Balneário Camboriú / Praia Brava),
  *  já com os pins carregados — em vez de um globo do mundo. */
@@ -91,41 +92,53 @@ const titleFontSizeClasses = {
   large: "text-3xl font-semibold tracking-tight sm:text-5xl",
 };
 
+type MapMarker = { id: string; lng: number; lat: number };
+
+function toMarkers(props: Property[] | null | undefined): MapMarker[] {
+  return (props ?? [])
+    .map((p) => {
+      const lat = Number(p.address?.lat);
+      const lng = Number(p.address?.lng);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+      return { id: p.id, lng, lat };
+    })
+    .filter((m): m is MapMarker => m != null);
+}
+
 type HeroProps = {
   heroContent?: HeroContent | Record<string, unknown> | null;
+  /** Imóveis já buscados no servidor (page.tsx) para os pins — evita chamar o backend no navegador. */
+  initialProperties?: Property[] | null;
 };
 
-export default function Hero({ heroContent = null }: HeroProps) {
+export default function Hero({
+  heroContent = null,
+  initialProperties = null,
+}: HeroProps) {
   const hero = useMemo(
     () => normalizeHero(heroContent as HeroContent),
     [heroContent],
   );
 
-  const [markers, setMarkers] = useState<
-    { id: string; lng: number; lat: number }[]
-  >([]);
+  const [markers, setMarkers] = useState<MapMarker[]>(() =>
+    toMarkers(initialProperties),
+  );
 
   useEffect(() => {
+    // Se já veio do servidor, usa isso e NÃO chama o backend no navegador (evita 503).
+    if (initialProperties && initialProperties.length > 0) {
+      setMarkers(toMarkers(initialProperties));
+      return;
+    }
     let mounted = true;
     getPropertiesFromApiOnly().then((props) => {
       if (!mounted) return;
-      const pts =
-        props
-          ?.map((p) => {
-            const lat = Number(p.address?.lat);
-            const lng = Number(p.address?.lng);
-            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-            return { id: p.id, lng, lat };
-          })
-          .filter(
-            (m): m is { id: string; lng: number; lat: number } => m != null,
-          ) ?? [];
-      setMarkers(pts);
+      setMarkers(toMarkers(props));
     });
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [initialProperties]);
 
   const titleClass = [
     titleFontSizeClasses[hero.titleFontSize],

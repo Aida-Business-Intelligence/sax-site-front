@@ -1,33 +1,21 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import PropertyCard from "@/components/cards/PropertyCard";
-import { getPropertiesFromApiOnly } from "@/services/properties";
 import type { Property } from "@/types/realEstate";
 
 /**
- * Seção de imóveis logo na home (abaixo do hero), pra o site de imobiliária
- * já mostrar imóveis de cara — não só o mapa. Mostra os primeiros e leva
- * para /imoveis (onde estão todos, com filtro).
+ * Seção de imóveis logo na home (abaixo do hero). Recebe os imóveis já
+ * buscados NO SERVIDOR (via page.tsx) — assim o navegador não precisa chamar
+ * o backend (que é fraco e devolve 503 sob várias chamadas simultâneas).
  */
 const HOME_HIGHLIGHT_COUNT = 8;
 
-export default function FeaturedImoveis() {
-  const [items, setItems] = useState<Property[]>([]);
-
-  useEffect(() => {
-    let mounted = true;
-    getPropertiesFromApiOnly().then((props) => {
-      if (!mounted) return;
-      setItems((props ?? []).slice(0, HOME_HIGHLIGHT_COUNT));
-    });
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
+export default function FeaturedImoveis({
+  properties,
+}: {
+  properties?: Property[] | null;
+}) {
+  const items = (properties ?? []).slice(0, HOME_HIGHLIGHT_COUNT);
   if (items.length === 0) return null;
 
   return (

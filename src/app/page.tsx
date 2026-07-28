@@ -1,15 +1,26 @@
 import Hero from "@/sections/home/Hero";
 import FeaturedImoveis from "@/sections/home/FeaturedImoveis";
-import { getSiteConfig } from "@/services/properties";
+import {
+  getSiteConfig,
+  getPropertiesFromApiOnly,
+} from "@/services/properties";
 
 export const revalidate = 0; // sempre dados frescos (edição no PDV reflete ao recarregar)
 
 export default async function Home() {
-  const config = await getSiteConfig();
+  // Busca NO SERVIDOR (uma vez) e entrega pronto — evita o navegador chamar o
+  // backend dev-sax várias vezes (ele devolve 503 sob chamadas simultâneas).
+  const [config, properties] = await Promise.all([
+    getSiteConfig(),
+    getPropertiesFromApiOnly(),
+  ]);
   return (
     <>
-      <Hero heroContent={config?.heroContent ?? null} />
-      <FeaturedImoveis />
+      <Hero
+        heroContent={config?.heroContent ?? null}
+        initialProperties={properties}
+      />
+      <FeaturedImoveis properties={properties} />
     </>
   );
 }
