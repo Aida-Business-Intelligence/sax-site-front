@@ -87,9 +87,18 @@ export async function generateMetadata({ params }: Props) {
   });
 }
 
-function buildWhatsappHref(digitsRaw: unknown): string | null {
+/** Número padrão da SAX (mesmo usado no Hero da home) — garante que o botão do
+ *  WhatsApp sempre apareça, mesmo sem número configurado na gestão do site. */
+const DEFAULT_SAX_WHATSAPP = "5547997324596";
+
+function buildWhatsappHref(
+  digitsRaw: unknown,
+  message?: string,
+): string | null {
   const digits = String(digitsRaw ?? "").replace(/\D/g, "");
-  return digits ? `https://wa.me/${digits}` : null;
+  if (!digits) return null;
+  const q = message ? `?text=${encodeURIComponent(message)}` : "";
+  return `https://wa.me/${digits}${q}`;
 }
 
 function ImovelViewTracker({ slug }: { slug: string }) {
@@ -145,7 +154,10 @@ export default async function ImovelPage({ params }: Props) {
     Number.isFinite(Number(mapLng));
 
   const im = siteConfig.imoveisContent;
-  const waHref = buildWhatsappHref(im?.whatsappNumber);
+  const waMessage = `Olá! Tenho interesse no imóvel "${property.title}". Pode me passar mais informações?`;
+  const waHref =
+    buildWhatsappHref(im?.whatsappNumber, waMessage) ??
+    buildWhatsappHref(DEFAULT_SAX_WHATSAPP, waMessage);
   const waButtonText =
     typeof im?.whatsappButtonText === "string" &&
     im.whatsappButtonText.trim() !== ""

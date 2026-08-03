@@ -4,14 +4,47 @@
  */
 
 export function getSaxApiBase(): string {
+  // No navegador: passa pelo proxy do próprio site (/api/sax) — que tem cache +
+  // retry — em vez de bater direto no dev-sax (fraco, devolve 503 sob carga).
   if (typeof window !== "undefined") {
-    return (process.env.NEXT_PUBLIC_SAX_API_URL ?? "").trim().replace(/\/$/, "");
+    return "/api/sax";
   }
+  // No servidor (SSR): bate direto no dev-sax.
   return (process.env.NEXT_PUBLIC_SAX_API_URL ?? "").trim().replace(/\/$/, "");
 }
 
 export function hasSaxApi(): boolean {
   return getSaxApiBase().length > 0;
+}
+
+/**
+ * fetch com retry para o backend dev-sax, que devolve 502/503/504 quando recebe
+ * várias chamadas simultâneas (mapa + filtros). Tenta de novo com um respiro —
+ * ele normalmente responde na 2ª/3ª tentativa. Retorna null se falhar de vez.
+ */
+async function fetchSaxWithRetry(
+  url: string,
+  init: RequestInit,
+  retries = 3,
+): Promise<Response | null> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, init);
+      if (res.ok) return res;
+      if (res.status >= 500 && attempt < retries) {
+        await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+        continue;
+      }
+      return res;
+    } catch {
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+        continue;
+      }
+      return null;
+    }
+  }
+  return null;
 }
 
 export type SectionDto = {
@@ -57,8 +90,10 @@ export async function fetchSections(): Promise<SectionDto[]> {
   const base = getSaxApiBase();
   if (!base) return [];
   try {
-    const res = await fetch(`${base}/api/sections`, { cache: "no-store" });
-    if (!res.ok) return [];
+    const res = await fetchSaxWithRetry(`${base}/api/sections`, {
+      cache: "no-store",
+    });
+    if (!res || !res.ok) return [];
     const data = await res.json();
     return Array.isArray(data) ? data : data?.data ?? [];
   } catch {
@@ -71,8 +106,10 @@ export async function fetchTags(): Promise<TagDto[]> {
   const base = getSaxApiBase();
   if (!base) return [];
   try {
-    const res = await fetch(`${base}/api/tags`, { cache: "no-store" });
-    if (!res.ok) return [];
+    const res = await fetchSaxWithRetry(`${base}/api/tags`, {
+      cache: "no-store",
+    });
+    if (!res || !res.ok) return [];
     const data = await res.json();
     const list = Array.isArray(data) ? data : data?.data ?? [];
     return list.filter((t: TagDto) => t.active !== false);
@@ -142,8 +179,10 @@ export async function fetchSiteConfig(): Promise<{
   };
   if (!base) return empty;
   try {
-    const res = await fetch(`${base}/api/site-config`, { cache: "no-store" });
-    if (!res.ok) return empty;
+    const res = await fetchSaxWithRetry(`${base}/api/site-config`, {
+      cache: "no-store",
+    });
+    if (!res || !res.ok) return empty;
     const data = await res.json();
     const ids = Array.isArray(data?.featuredPropertyIds) ? data.featuredPropertyIds : [];
     const partnerLogos = Array.isArray(data?.partnerLogos)
@@ -195,10 +234,10 @@ export async function fetchProperties(options?: {
     const qs = options?.sectionId
       ? `?sectionId=${encodeURIComponent(options.sectionId)}`
       : "";
-    const res = await fetch(`${base}/api/properties${qs}`, {
+    const res = await fetchSaxWithRetry(`${base}/api/properties${qs}`, {
       cache: "no-store",
     });
-    if (!res.ok) return [];
+    if (!res || !res.ok) return [];
     const data = await res.json();
     return Array.isArray(data) ? data : data?.data ?? [];
   } catch {
