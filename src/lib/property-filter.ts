@@ -141,6 +141,23 @@ export function applyFilter(
           !(priceForFilter >= 1000000 && priceForFilter <= 2000000)
         )
           return false;
+        if (
+          priceRange === "2m-4m" &&
+          !(priceForFilter >= 2000000 && priceForFilter <= 4000000)
+        )
+          return false;
+        if (
+          priceRange === "4m-6m" &&
+          !(priceForFilter >= 4000000 && priceForFilter <= 6000000)
+        )
+          return false;
+        if (
+          priceRange === "6m-8m" &&
+          !(priceForFilter >= 6000000 && priceForFilter <= 8000000)
+        )
+          return false;
+        if (priceRange === "gt8m" && !(priceForFilter > 8000000)) return false;
+        // compat: "gt2m" antigo continua funcionando (links/estado salvos)
         if (priceRange === "gt2m" && !(priceForFilter > 2000000)) return false;
       }
       if (hasMinFilter && priceForFilter < priceMin!) return false;

@@ -578,8 +578,17 @@ export default function MapaPage() {
                             <SelectItem value="1m-2m">
                               R$ 1.000.000 - R$ 2.000.000
                             </SelectItem>
-                            <SelectItem value="gt2m">
-                              Acima de R$ 2.000.000
+                            <SelectItem value="2m-4m">
+                              R$ 2.000.000 - R$ 4.000.000
+                            </SelectItem>
+                            <SelectItem value="4m-6m">
+                              R$ 4.000.000 - R$ 6.000.000
+                            </SelectItem>
+                            <SelectItem value="6m-8m">
+                              R$ 6.000.000 - R$ 8.000.000
+                            </SelectItem>
+                            <SelectItem value="gt8m">
+                              Acima de R$ 8.000.000
                             </SelectItem>
                           </SelectContent>
                         </Select>

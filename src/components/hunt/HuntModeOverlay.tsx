@@ -14,7 +14,16 @@ const OPEN_DELAY_MS = 6000;
 
 type Mode = "venda" | "aluguel";
 type PropertyKind = string;
-type PriceRangeKey = "any" | "lt500k" | "500k-1m" | "1m-2m" | "gt2m";
+type PriceRangeKey =
+  | "any"
+  | "lt500k"
+  | "500k-1m"
+  | "1m-2m"
+  | "2m-4m"
+  | "4m-6m"
+  | "6m-8m"
+  | "gt8m"
+  | "gt2m";
 
 const PRICE_RANGES: Record<
   Exclude<PriceRangeKey, "any">,
@@ -23,6 +32,10 @@ const PRICE_RANGES: Record<
   lt500k: { max: 500_000 },
   "500k-1m": { min: 500_000, max: 1_000_000 },
   "1m-2m": { min: 1_000_000, max: 2_000_000 },
+  "2m-4m": { min: 2_000_000, max: 4_000_000 },
+  "4m-6m": { min: 4_000_000, max: 6_000_000 },
+  "6m-8m": { min: 6_000_000, max: 8_000_000 },
+  gt8m: { min: 8_000_000 },
   gt2m: { min: 2_000_000 },
 };
 
@@ -422,7 +435,10 @@ export function HuntModeOverlay({ huntModeEnabled: serverHuntEnabled = false }: 
                         ["lt500k", "Até R$ 500 mil"],
                         ["500k-1m", "R$ 500 mil – 1 mi"],
                         ["1m-2m", "R$ 1 mi – 2 mi"],
-                        ["gt2m", "Acima de R$ 2 mi"],
+                        ["2m-4m", "R$ 2 mi – 4 mi"],
+                        ["4m-6m", "R$ 4 mi – 6 mi"],
+                        ["6m-8m", "R$ 6 mi – 8 mi"],
+                        ["gt8m", "Acima de R$ 8 mi"],
                       ] as const
                     ).map(([key, label]) => (
                       <button
