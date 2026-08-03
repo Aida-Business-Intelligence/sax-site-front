@@ -272,7 +272,7 @@ export default function Hero({
       )}
 
       {/* Filtro (desktop/tablet fixo próximo à base) */}
-      <div className="hidden xl:flex absolute inset-x-0 pb-24 sm:bottom-32 xl:-bottom-72 justify-center px-4 sm:px-6 z-50">
+      <div className="hidden xl:flex justify-center px-4 sm:px-6 pt-6 pb-8 z-50">
         <div className="w-full max-w-7xl relative z-50">
           <HomeFilter />
         </div>
