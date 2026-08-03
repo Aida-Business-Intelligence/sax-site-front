@@ -150,9 +150,10 @@ export default function Hero({
   const buttonHref = buildButtonHref(hero.buttonLinkType, hero.buttonLink);
 
   return (
-    <section className="relative mx-auto flex min-h-[calc(100vh-220px)] max-w-6xl flex-col overflow-visible px-4 pt-12 sm:min-h-[calc(100vh-180px)] sm:px-6 sm:pt-16 xl:block xl:min-h-[calc(100vh-176px)] xl:pt-28">
-      {/* min-h: reserva espaço vertical para o globo absoluto (top-36 + ~520px) antes do filtro no fluxo */}
-      <div className="grid gap-8 xl:min-h-[min(696px,calc(100vh-240px))] xl:grid-cols-2 xl:items-center">
+    <section className="relative mx-auto flex min-h-[calc(100vh-220px)] max-w-6xl flex-col overflow-visible px-4 pt-12 sm:min-h-[calc(100vh-180px)] sm:px-6 sm:pt-16 xl:block xl:min-h-[calc(100vh-176px)] xl:pt-36">
+      {/* Mesmo topo (pt-36 = top-36) e mesma altura do mapa absoluto, para o texto
+          centralizar sempre alinhado ao meio do mapa em qualquer altura de tela. */}
+      <div className="grid gap-8 xl:min-h-[min(520px,calc(100vh-320px))] min-[1700px]:xl:min-h-[560px] xl:grid-cols-2 xl:items-center">
         <div className="space-y-6 relative z-10 hidden xl:block">
           <motion.h1
             initial={{ opacity: 0, y: 16 }}
