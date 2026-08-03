@@ -87,8 +87,9 @@ export default function Footer({
             </div>
           </div>
 
-          {/* Right: social (desktop) */}
-          <div className="hidden 2xl:flex items-center gap-3">
+          {/* Right: social (desktop) — mr reserva espaço p/ o botão flutuante
+              "Modo Caça" (fixed bottom-right) não cobrir os ícones */}
+          <div className="hidden 2xl:flex items-center gap-3 2xl:mr-44">
             {social.map(({ url, label, Icon }) => (
               <a
                 key={label}
